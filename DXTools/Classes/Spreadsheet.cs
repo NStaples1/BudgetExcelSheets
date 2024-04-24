@@ -20,6 +20,7 @@ using DevExpress.XtraSpreadsheet.Commands;
 using DevExpress.Spreadsheet.Drawings;
 using DevExpress.UnitConversion;
 using DevExpress.XtraSpreadsheet.DocumentFormats.Xlsb;
+using DevExpress.Data.Svg;
 
 namespace DXTools
 {
@@ -619,7 +620,26 @@ namespace DXTools
                return cell.Value.TextValue;
          }
       }
+        public string Get_Cell_Text_From_Formula(int RowIndex, int ColumnIndex, int SheetIndex)
+        {
+            Worksheet workSheet = workbook.Worksheets[SheetIndex];
+            if (workSheet == null)
+                throw new Exception("Unable to locate Sheet Index " + SheetIndex);
+            else
+            {
+                workSheet.Calculate();
+                Cell cell = workSheet.Cells[RowIndex, ColumnIndex];
 
+                if (cell.Value.IsDateTime)
+                    return Global.ConvertToDateTime(cell.Value.DateTimeValue).ToString("dd/MM/yyyy");
+                else if (cell.Value.IsNumeric)
+                    return Global.ConvertDoubleToString(cell.Value.NumericValue, cell.NumberFormat);
+                else
+                    return cell.Value.TextValue;
+            }
+        }
+
+    
       public CellValue Get_Cell_Formula(int RowIndex, int ColumnIndex, int SheetIndex)
       {
          Worksheet workSheet = workbook.Worksheets[SheetIndex];
