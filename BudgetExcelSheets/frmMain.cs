@@ -784,7 +784,7 @@ namespace BudgetExcelSheets
                         sSheet.Set_Formula(RowNumber, 9, "='" + Year + " BUDGET'!J" + (i + 1), SheetNumber, "£ #,##0");
                         sSheet.Set_Formula(RowNumber, 10, "='" + Year + " BUDGET'!K" + (i + 1), SheetNumber, "£ #,##0");
                         sSheet.Set_Formula(RowNumber, 11, "='" + Year + " BUDGET'!L" + (i + 1), SheetNumber, "£ #,##0");
-                        sSheet.Set_Formula(RowNumber, 12, "='" + Year + " BUDGET'!N" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 12, "='" + Year + " BUDGET'!M" + (i + 1), SheetNumber, "£ #,##0");
                         sSheet.Set_Formula(RowNumber, 13, "=SUM(B" + (RowNumber + 1) + ":M" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
                         sSheet.Set_Formula(RowNumber, 14, "=SUM(B" + (RowNumber + 1) + ":" + sSheet.GetExcelColumnName(MonthColumnIndex) + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
 
@@ -980,7 +980,7 @@ namespace BudgetExcelSheets
                     RowNumber++;
                     int newBusinessnoBudget = RowNumber;
 
-                    for (int i = 0; i < (newCustomerNoBudgetTotalRows - 1); i++)
+                    for (int i = 0; i < newCustomerNoBudgetTotalRows; i++)
                     {
                         sSheet.Set_Formula(RowNumber, 0, "='NEW BUSINESS NO BUDGET'!A" + (i + 1), SheetNumber);
                         sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AN,2,FALSE),0)", SheetNumber, "£ #,##0");
@@ -1445,12 +1445,12 @@ namespace BudgetExcelSheets
 
                     //Last Year
                     sms.Set_Chart(sSheet, "B" + (SalesLastYearsRow + 1) + ":M" + (SalesLastYearsRow + 1), "B" + (SalesLastYearsRow + 3) + ":M" + (SalesLastYearsRow + 3), "A" + (SalesLastYearsRow + 1), "A" + (SalesLastYearsRow + 3), 
-                        "B1:M1", "B1:M1", "O1", "AA16", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, LastYear + " SALES V BUDGET V PRIOR YEAR", 
+                        "B1:M1", "B1:M1", "O1", "AB16", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, LastYear + " SALES V BUDGET V PRIOR YEAR", 
                         "B" + (SalesLastYearsRow + 2) + ":M" + (SalesLastYearsRow + 2), "A" + (SalesLastYearsRow + 2), "B1:M1", null, null, null, true);
 
                     //Year
                     sms.Set_Chart(sSheet, "B" + (SalesThisYearRow + 1) + ":M" + (SalesThisYearRow + 1), "B" + (SalesThisYearRow + 3) + ":M" + (SalesThisYearRow + 3), "A" + (SalesThisYearRow + 1), "A" + (SalesThisYearRow + 3), 
-                        "B1:M1", "B1:M1", "O18", "AA37", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, Year + " SALES V BUDGET V PRIOR YEAR", 
+                        "B1:M1", "B1:M1", "O18", "AB37", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, Year + " SALES V BUDGET V PRIOR YEAR", 
                         "B" + (SalesThisYearRow + 2) + ":M" + (SalesThisYearRow + 2), "A" + (SalesThisYearRow + 2), "B1:M1", null, null, null, true);
 
                     sSheet.Set_Bold_Range("A1:A50", true, SheetNumber);
