@@ -82,11 +82,11 @@
             // 
             this.labelControl2.Appearance.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelControl2.Appearance.Options.UseFont = true;
-            this.labelControl2.Location = new System.Drawing.Point(81, 9);
+            this.labelControl2.Location = new System.Drawing.Point(43, 8);
             this.labelControl2.Name = "labelControl2";
-            this.labelControl2.Size = new System.Drawing.Size(191, 23);
+            this.labelControl2.Size = new System.Drawing.Size(275, 23);
             this.labelControl2.TabIndex = 3;
-            this.labelControl2.Text = "Excel Budget Sheet:";
+            this.labelControl2.Text = "Monthly Budget Excel Sheet:";
             // 
             // separatorControl1
             // 
@@ -110,7 +110,7 @@
             this.MaximizeBox = false;
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Excel Sheet";
+            this.Text = "Monthly Budget Sheet";
             this.Load += new System.EventHandler(this.frmMain_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dteReportDate.Properties.CalendarTimeProperties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dteReportDate.Properties)).EndInit();

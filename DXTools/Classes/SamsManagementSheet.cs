@@ -125,6 +125,15 @@ namespace DXTools.Classes
                                 }
                             }
 
+                            if (FourthCellReferenceRange != "")
+                            {
+                                if (FourthCellReferenceRange != null)
+                                {
+                                    series3 = chart.Series.Add(workSheet[FourthTitle], workSheet[FourthPlotRange], workSheet[FourthCellReferenceRange]);
+                                    chart.Series[3].Fill.SetSolidFill(color4);
+                                }
+                            }
+
                             chart.Series[0].Fill.SetSolidFill(color1);
                             chart.Series[1].Fill.SetSolidFill(color2);
                         }

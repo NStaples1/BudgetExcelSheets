@@ -620,6 +620,25 @@ namespace DXTools
                return cell.Value.TextValue;
          }
       }
+
+        public string Get_Cell_Text(int RowIndex, int ColumnIndex, string SheetName)
+        {
+            Worksheet workSheet = workbook.Worksheets[SheetName];
+            if (workSheet == null)
+                throw new Exception("Unable to locate Sheet " + SheetName);
+            else
+            {
+                Cell cell = workSheet.Cells[RowIndex, ColumnIndex];
+
+                if (cell.Value.IsDateTime)
+                    return Global.ConvertToDateTime(cell.Value.DateTimeValue).ToString("dd/MM/yyyy");
+                else if (cell.Value.IsNumeric)
+                    return Global.ConvertDoubleToString(cell.Value.NumericValue, cell.NumberFormat);
+                else
+                    return cell.Value.TextValue;
+            }
+        }
+
         public string Get_Cell_Text_From_Formula(int RowIndex, int ColumnIndex, int SheetIndex)
         {
             Worksheet workSheet = workbook.Worksheets[SheetIndex];

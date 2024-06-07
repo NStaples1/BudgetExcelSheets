@@ -50,6 +50,7 @@ namespace BudgetExcelSheets
                     string EndDate = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddMonths(1).AddSeconds(-1).ToString("yyyy-MM-dd");
                     string Year = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("yyyy");
                     string LastYear = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-1).ToString("yyyy");
+                    string Month = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("MMMM").ToUpper();
                     clsInvoices Invoices = new clsInvoices();
                     int RowNumber = 0;
                     int SheetNumber = 0;
@@ -58,7 +59,7 @@ namespace BudgetExcelSheets
                     * BUDGET
                     *************************************************************************************************************************/
 
-                    sSheet.LoadFromFile("C:\\Data\\Budget Sheet.xlsx");
+                    sSheet.LoadFromFile("H:\\INTERNAL SALES\\Management Budget Template\\Budget Sheet.xlsx");
 
                     sSheet.Set_Workbook_Units(Spreadsheet.DocumentUnits.Point);
 
@@ -707,20 +708,20 @@ namespace BudgetExcelSheets
                     for (int i = NewBusinessWonStart; i < NewBusinessWonEnd; i++)
                     {
                         sSheet.Set_Formula(RowNumber, 0, "='" + Year + " BUDGET'!A" + (i + 1), SheetNumber);
-                        sSheet.Set_Formula(RowNumber, 1, "='" + Year + " BUDGET'!B" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 2, "='" + Year + " BUDGET'!C" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 3, "='" + Year + " BUDGET'!D" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 4, "='" + Year + " BUDGET'!E" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 5, "='" + Year + " BUDGET'!F" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 6, "='" + Year + " BUDGET'!G" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 7, "='" + Year + " BUDGET'!H" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 8, "='" + Year + " BUDGET'!I" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 9, "='" + Year + " BUDGET'!J" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 10, "='" + Year + " BUDGET'!K" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 11, "='" + Year + " BUDGET'!L" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 12, "='" + Year + " BUDGET'!M" + (i + 1), SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 13, "=SUM(B" + (RowNumber + 1) + ":M" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, 14, "=SUM(B" + (RowNumber + 1) + ":" + sSheet.GetExcelColumnName(MonthColumnIndex) + (RowNumber + 1) + ")", SheetNumber, "£ #,##0.00");
+                        sSheet.Set_Formula(RowNumber, 1, "='" + Year + " BUDGET'!B" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "='" + Year + " BUDGET'!C" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "='" + Year + " BUDGET'!D" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 4, "='" + Year + " BUDGET'!E" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 5, "='" + Year + " BUDGET'!F" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 6, "='" + Year + " BUDGET'!G" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 7, "='" + Year + " BUDGET'!H" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 8, "='" + Year + " BUDGET'!I" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 9, "='" + Year + " BUDGET'!J" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 10, "='" + Year + " BUDGET'!K" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 11, "='" + Year + " BUDGET'!L" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 12, "='" + Year + " BUDGET'!M" + (i + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 13, "=SUM(B" + (RowNumber + 1) + ":M" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 14, "=SUM(B" + (RowNumber + 1) + ":" + sSheet.GetExcelColumnName(MonthColumnIndex) + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
 
                         RowNumber++;
                     }
@@ -1055,9 +1056,124 @@ namespace BudgetExcelSheets
                     sSheet.Set_Bold_Range("A" + (RowNumber - 1) + ":N" + (RowNumber + 1), true, SheetNumber);
                     sSheet.Set_FontColour("A" + (newBusinessnoBudget) + ":N" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
 
+                    RowNumber += 2;
+
+                    sSheet.Set_Cell(RowNumber, 0, "MTHLY SALES - BUD 'NEW IN " + Year + "'", SheetNumber);
+                    for (int i = 1; i < 13; i++)
+                        sSheet.Set_Formula(RowNumber, i, "=" + sSheet.GetExcelColumnName(i + 1) + (newBusinessnoBudget - 2), SheetNumber, "£ #,##0");
+
+                    RowNumber++;
+
+                    sSheet.Set_Cell(RowNumber, 0, "TOTAL NEW NO BUDGET", SheetNumber);
+                    for (int i = 1; i < 13; i++)
+                        sSheet.Set_Formula(RowNumber, i, "=" + sSheet.GetExcelColumnName(i + 1) + (totalNewNoBudgetRow + 1), SheetNumber, "£ #,##0");
+
+                    RowNumber += 2;
+
+                    sSheet.Set_Cell(RowNumber, 0, "NEW BUSINESS IN " + Year, SheetNumber);
+                    for (int i = 1; i < 13; i++)
+                        sSheet.Set_Formula(RowNumber, i, "=" + sSheet.GetExcelColumnName(i + 1) + (newBusinessBudgetEnd + 1), SheetNumber, "£ #,##0");
+
+                    RowNumber += 6;
+
+                    sSheet.Set_Cell(RowNumber, 0, "NEW BUSINESS WON IN " + LastYear + " IMPACTING " + Year, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 1, "BUD YTD " + Month, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 2, "ACT YTD", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 3, "BUD FY", SheetNumber);
+
+                    sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), true, SheetNumber);
+                    sSheet.Set_FontColour("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
+
+                    RowNumber++;
+                    int c = newBusinessWonBudget + 1;
+                    int oc = newBusinessWonSales + 1;
+                    for (int i = NewBusinessWonStart; i < NewBusinessWonEnd; i++)
+                    {
+                        sSheet.Set_Formula(RowNumber, 0, "=A" + (c), SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=O" + (c), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=N" + (oc), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "=N" + (c), SheetNumber, "£ #,##0");
+
+                        sSheet.Set_FontColour("A" + (RowNumber + 1), DarkTeal, Color.Black, SheetNumber);
+                        sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+                        c++;
+                        oc++;
+                        RowNumber++;
+                    }
+
+                    sSheet.Set_Cell(RowNumber, 0, "MONTHLY BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+                    sSheet.Set_Formula(RowNumber, 1, "=O" + (c), SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 2, "=N" + (oc), SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 3, "=N" + (c), SheetNumber, "£ #,##0");
+
+                    RowNumber++;
+
+                    sSheet.Set_Formula(RowNumber, 2, "=B" + (RowNumber) + "-C" + (RowNumber), SheetNumber, "£ #,##0");
+
+                    RowNumber += 2;
+
+                    sSheet.Set_Cell(RowNumber, 0, "NEW BUSINESS IN " + Year, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 1, "BUD YTD " + Month, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 2, "ACT YTD", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 3, "BUD FY", SheetNumber);
+
+                    sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), true, SheetNumber);
+                    sSheet.Set_FontColour("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
+
+                    RowNumber++;
+                    c = newBusinessthisSheet + 1;
+                    oc = newBusinessSales + 1;
+                    for (int i = newBusinessStart; i < (BudgetTotalRow - 2); i++)
+                    {
+                        sSheet.Set_Formula(RowNumber, 0, "=A" + (c), SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=O" + (c), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=N" + (oc), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "=N" + (c), SheetNumber, "£ #,##0");
+
+                        sSheet.Set_FontColour("A" + (RowNumber + 1), GreenAccent, Color.Black, SheetNumber);
+                        sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+                        c++;
+                        oc++;
+                        RowNumber++;
+                    }
+
+                    sSheet.Set_Cell(RowNumber, 0, "MNTHLY SALES - BUD 'NEW IN " + Year + "'", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+                    sSheet.Set_Formula(RowNumber, 1, "=O" + (c), SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 2, "=N" + (oc), SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 3, "=N" + (c), SheetNumber, "£ #,##0");
+
+                    RowNumber++;
+
+                    sSheet.Set_Formula(RowNumber, 2, "=B" + (RowNumber) + "-C" + (RowNumber), SheetNumber, "£ #,##0");
+
+                    RowNumber += 2;
+
+                    sSheet.Set_Cell(RowNumber, 0, "NEW BUS NO BUDGET", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 1, "ACTUAL YTD", SheetNumber);
+
+                    sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":B" + (RowNumber + 1), true, SheetNumber);
+                    sSheet.Set_FontColour("A" + (RowNumber + 1) + ":B" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
+
+                    RowNumber++;
+
+                    c = newBusinessnoBudget + 1;
+                    for (int i = 0; i < newCustomerNoBudgetTotalRows; i++)
+                    {
+                        sSheet.Set_Formula(RowNumber, 0, "='NEW BUSINESS NO BUDGET'!A" + (i + 1), SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=N" + (c), SheetNumber, "£ #,##0");
+                        sSheet.Set_FontColour("A" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
+                        sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":B" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+
+                        c++;
+                        RowNumber++;
+                    }
+
+                    sSheet.Set_Cell(RowNumber, 0, "TOTAL NEW NO BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+                    sSheet.Set_Formula(RowNumber, 1, "=N" + (c), SheetNumber, "£ #,##0");
+
                     // New Business Won
-                    sms.Set_Chart(sSheet, "B" + (MonthlyBudgetRow + 1) + ":M" + (MonthlyBudgetRow + 1), "B" + (MonthlySalesRow + 1) + ":M" + (MonthlySalesRow + 1), "A" + (MonthlyBudgetRow + 1), "A" + (MonthlySalesRow + 1), 
-                        "B1:M1", "B1:M1", "Q2", "W14", SheetNumber, ChartType.ColumnClustered, Color.DarkGray, Color.Gray, LightGreen, LightGreen, LegendPosition.Bottom, "NEW BUSINESS WON IN " + LastYear + " IMPACTING " + Year);
+                    sms.Set_Chart(sSheet, "B" + (MonthlyBudgetRow + 1) + ":M" + (MonthlyBudgetRow + 1), "B" + (MonthlySalesRow + 1) + ":M" + (MonthlySalesRow + 1), "A" + (MonthlyBudgetRow + 1), "A" + (MonthlySalesRow + 1),
+                    "B1:M1", "B1:M1", "Q2", "W14", SheetNumber, ChartType.ColumnClustered, Color.DarkGray, Color.Gray, LightGreen, LightGreen, LegendPosition.Bottom, "NEW BUSINESS WON IN " + LastYear + " IMPACTING " + Year);
 
                     // Budgeted New Business
                     sms.Set_Chart(sSheet, "B" + (newBusinessBudgetEnd + 1) + ":M" + (newBusinessBudgetEnd + 1), "B" + (MonthlySaleswBudget + 1) + ":M" + (MonthlySaleswBudget + 1), "A" + (newBusinessBudgetEnd + 1), "A" + (MonthlySaleswBudget + 1),
@@ -1065,8 +1181,8 @@ namespace BudgetExcelSheets
 
                     // Total New Business
                     sms.Set_Chart(sSheet, "B" + (MonthlySaleswBudget + 1) + ":M" + (MonthlySaleswBudget + 1), "B" + (totalNewNoBudgetRow + 1) + ":M" + (totalNewNoBudgetRow + 1), "A" + (MonthlySaleswBudget + 1), "A" + (totalNewNoBudgetRow + 1),
-                        "B1:M1", "B1:M1", "Q28", "Z44", SheetNumber, ChartType.ColumnClustered, Color.Gray, Color.Teal, LightGreen, Color.DarkGray, LegendPosition.Bottom, "TOTAL NEW BUSINESS IN " + Year + " v BUDGET", 
-                        "B" + (totalVBudgetRow + 1) + ":M" + (totalVBudgetRow + 1), "A" + (totalVBudgetRow + 1), "B1:M1", "B" + (newBusinessBudgetEnd + 1) + ":M" + (newBusinessBudgetEnd + 1), "A" + (newBusinessBudgetEnd + 1), "B1:M1", true);
+                        "B1:M1", "B1:M1", "Q28", "Z44", SheetNumber, ChartType.ColumnClustered, Color.Gray, Color.Teal, LightGreen, Color.DarkGray, LegendPosition.Bottom, "TOTAL NEW BUSINESS IN " + Year + " v BUDGET",
+                        "B" + (totalVBudgetRow + 1) + ":M" + (totalVBudgetRow + 1), "A" + (totalVBudgetRow + 1), "B1:M1", "B" + (newBusinessBudgetEnd + 1) + ":M" + (newBusinessBudgetEnd + 1), "A" + (newBusinessBudgetEnd + 1), "B1:M1");
 
                     sSheet.Set_Column_Width(0, 41.57, "NEW B V BUDGET");
                     sSheet.Set_Column_Width(1, 10.86, "NEW B V BUDGET");
@@ -1439,18 +1555,18 @@ namespace BudgetExcelSheets
 
                     // Last Year -1 v Last Year v Year
                     sms.Set_Chart(sSheet, "B" + (SalesAllYearsRow + 1) + ":M" + (SalesAllYearsRow + 1), "B" + (SalesAllYearsRow + 2) + ":M" + (SalesAllYearsRow + 2), "A" + (SalesAllYearsRow + 1), "A" + (SalesAllYearsRow + 2),
-                        "B1:M1", "B1:M1", "C25", "J40", SheetNumber, ChartType.ColumnClustered, LightGreen, Color.Teal, Color.Gray, Color.Black, LegendPosition.Bottom, 
-                        Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-2).ToString("yyyy") + " v " + LastYear + " v " + Year, "B" + (SalesAllYearsRow + 3) + ":M" + (SalesAllYearsRow + 3), 
+                        "B1:M1", "B1:M1", "C25", "J40", SheetNumber, ChartType.ColumnClustered, LightGreen, Color.Teal, Color.Gray, Color.Black, LegendPosition.Bottom,
+                        Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-2).ToString("yyyy") + " v " + LastYear + " v " + Year, "B" + (SalesAllYearsRow + 3) + ":M" + (SalesAllYearsRow + 3),
                         "A" + (SalesAllYearsRow + 3), "B1:M1");
 
                     //Last Year
-                    sms.Set_Chart(sSheet, "B" + (SalesLastYearsRow + 1) + ":M" + (SalesLastYearsRow + 1), "B" + (SalesLastYearsRow + 3) + ":M" + (SalesLastYearsRow + 3), "A" + (SalesLastYearsRow + 1), "A" + (SalesLastYearsRow + 3), 
-                        "B1:M1", "B1:M1", "O1", "AB16", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, LastYear + " SALES V BUDGET V PRIOR YEAR", 
+                    sms.Set_Chart(sSheet, "B" + (SalesLastYearsRow + 1) + ":M" + (SalesLastYearsRow + 1), "B" + (SalesLastYearsRow + 3) + ":M" + (SalesLastYearsRow + 3), "A" + (SalesLastYearsRow + 1), "A" + (SalesLastYearsRow + 3),
+                        "B1:M1", "B1:M1", "O1", "AB16", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, LastYear + " SALES V BUDGET V PRIOR YEAR",
                         "B" + (SalesLastYearsRow + 2) + ":M" + (SalesLastYearsRow + 2), "A" + (SalesLastYearsRow + 2), "B1:M1", null, null, null, true);
 
                     //Year
-                    sms.Set_Chart(sSheet, "B" + (SalesThisYearRow + 1) + ":M" + (SalesThisYearRow + 1), "B" + (SalesThisYearRow + 3) + ":M" + (SalesThisYearRow + 3), "A" + (SalesThisYearRow + 1), "A" + (SalesThisYearRow + 3), 
-                        "B1:M1", "B1:M1", "O18", "AB37", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, Year + " SALES V BUDGET V PRIOR YEAR", 
+                    sms.Set_Chart(sSheet, "B" + (SalesThisYearRow + 1) + ":M" + (SalesThisYearRow + 1), "B" + (SalesThisYearRow + 3) + ":M" + (SalesThisYearRow + 3), "A" + (SalesThisYearRow + 1), "A" + (SalesThisYearRow + 3),
+                        "B1:M1", "B1:M1", "O18", "AB37", SheetNumber, ChartType.ColumnClustered, Color.Teal, Color.Gray, LightGreen, Color.Black, LegendPosition.Bottom, Year + " SALES V BUDGET V PRIOR YEAR",
                         "B" + (SalesThisYearRow + 2) + ":M" + (SalesThisYearRow + 2), "A" + (SalesThisYearRow + 2), "B1:M1", null, null, null, true);
 
                     sSheet.Set_Bold_Range("A1:A50", true, SheetNumber);
@@ -1615,6 +1731,36 @@ namespace BudgetExcelSheets
                     sSheet.Hide_Columns(StartIndex, 60, SheetNumber);
 
                     /**************************************************************************************************************************
+                    * CUSTOMERS NOT BOUGHT THIS MONTH
+                    *************************************************************************************************************************/
+
+                    SheetNumber++;
+
+                    sSheet.Insert_Worksheet("CUSTOMERS NOT BOUGHT THIS MONTH", SheetNumber);
+
+                    RowNumber = 0;
+
+                    sSheet.Set_Cell(RowNumber, 1, "CUSTOMER NAME", SheetNumber);
+
+                    RowNumber++;
+
+                    for (int i = 3; i < ThisYearRowCount; i++)
+                    {
+                        var Value = sSheet.Get_Cell_Text((i - 1), (((MonthColumnIndex - 1) * 3) - 2), Year + " MONTH SALES PER CUSTOMER");
+                        if (Value == null || Value == "")
+                        {
+                            sSheet.Set_Formula(RowNumber, 1, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
+                            RowNumber++;
+                        }
+                    }
+
+                    sSheet.Set_AllBorders("B1:B" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+                    sSheet.Set_Bold_Range("B1", true, SheetNumber);
+                    sSheet.Set_FontColour("B1", Color.LightGray, Color.Black, SheetNumber);
+                    sSheet.Set_Column_Width(1, 41.57, "CUSTOMERS NOT BOUGHT THIS MONTH");
+
+
+                    /**************************************************************************************************************************
                     * SALES + WEIGHT EXPORT
                     *************************************************************************************************************************/
                     RowNumber = 0;
@@ -1640,7 +1786,7 @@ namespace BudgetExcelSheets
 
                     sSheet.Auto_fit(0, 2, SheetNumber);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     ProcessError.Show(ModuleName, "cmdGo_Click", ex);
                 }
