@@ -82,7 +82,8 @@ namespace DXTools.Classes
 
         public void Set_Chart(Spreadsheet sSheet, string FirstCellReferenceRange, string SecondCellReferenceRange, string FirstTitle, string SecondTitle, string FirstPlotRange, string SecondPlotRange, string TopLeft, 
             string BottomRight, int SheetIndex, ChartType chartType, Color color1, Color color2, Color color3, Color color4, LegendPosition legendPosition = LegendPosition.Bottom, string Title = "", 
-            string ThirdCellReferenceRange = "", string ThirdTitle = "", string ThirdPlotRange = "", string FourthCellReferenceRange = "", string FourthTitle = "", string FourthPlotRange = "", bool Combo = false)
+            string ThirdCellReferenceRange = "", string ThirdTitle = "", string ThirdPlotRange = "", string FourthCellReferenceRange = "", string FourthTitle = "", string FourthPlotRange = "", bool Combo = false, bool Legend = true, 
+            bool DataTable = false)
         {
             Worksheet workSheet = sSheet.workbook.Worksheets[SheetIndex];
             if (workSheet == null)
@@ -99,8 +100,10 @@ namespace DXTools.Classes
                 chart.Title.Font.Size = 14;
                 chart.Views[0].DataLabels.ShowValue = false;
                 chart.Views[0].VaryColors = false;
-                chart.Legend.Visible = true;
+                chart.Legend.Visible = Legend;
                 chart.Legend.Position = legendPosition;
+                chart.DataTable.Visible = DataTable;
+                
                 List<Color> colors = new List<Color> { LightGreen, Color.Teal, Color.Gray };
                 Series series0;
                 Series series1;
