@@ -26,6 +26,7 @@ using System.Data.SqlTypes;
 using DevExpress.Spreadsheet.Charts;
 using DXTools.Classes;
 using DevExpress.Utils.Svg;
+using System.Security.Principal;
 
 namespace BudgetExcelSheets
 {
@@ -57,6 +58,7 @@ namespace BudgetExcelSheets
                     int RowNumber = 0;
                     int SheetNumber = 0;
                     Color LightGreen = ColorTranslator.FromHtml("#66FFCC");
+                    string sqlstring = string.Empty;
                     /**************************************************************************************************************************
                     * BUDGET
                     *************************************************************************************************************************/
@@ -68,7 +70,6 @@ namespace BudgetExcelSheets
                     int MonthColumnIndex = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).Month + 1;
                     int BudgetTotalRow = sSheet.GetWorksheetRange(Year + " BUDGET").RowCount;
                     int priorYearBudgetTotalRow = sSheet.GetWorksheetRange(LastYear + " BUDGET").RowCount;
-                    int newCustomerNoBudgetTotalRows = sSheet.GetWorksheetRange("NEW BUSINESS NO BUDGET").RowCount;
                     int NewBusinessWonStart = 0;
                     int NewBusinessWonEnd = 0;
                     int newBusinessStart = 0;
@@ -96,8 +97,52 @@ namespace BudgetExcelSheets
                     SheetNumber++;
                     RowNumber = 0;
 
+                    /**************************************************************************************************************************
+                    * NEW BUSINESS NO BUDGET
+                    *************************************************************************************************************************/
+
                     SheetNumber++;
                     RowNumber = 0;
+                    sqlstring = "SELECT tbl_Customer.Name AS Name " +
+                    "FROM tbl_Customer LEFT OUTER JOIN " +
+                        "(SELECT COUNT(tbl_Customer.Account_Ref) AS Account, tbl_Customer.Name, tbl_Customer.CustomerID " +
+                        "FROM tbl_Customer INNER JOIN " +
+                        "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
+                        "WHERE (tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + LastYear  + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + LastYear + "-12-31 00:00:00', 102)) AND(tbl_Customer.Deleted = 0) " +
+                        "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID) InvoicesPrevYear ON tbl_Customer.CustomerID = InvoicesPrevYear.CustomerID LEFT OUTER JOIN " +
+                        "(SELECT COUNT(tbl_Customer.Account_Ref) AS Account, tbl_Customer.Name, tbl_Customer.CustomerID " +
+                        "FROM tbl_Customer INNER JOIN " +
+                        "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
+                        "WHERE(tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + Year + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + Year + "-12-31 00:00:00', 102)) AND(tbl_Customer.Deleted = 0) " +
+                        "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID) InvoicesThisYear ON tbl_Customer.CustomerID = InvoicesThisYear.CustomerID " +
+                        "WHERE InvoicesPrevYear.CustomerID IS NULL AND NOT(InvoicesThisYear.CustomerID IS NULL) ";
+
+                    DataTable NewBusinessNoBudgetTable = Invoices.RetrieveDataTable(sqlstring, false);
+
+                    sSheet.Add_Worksheet("NEW BUSINESS NO BUDGET");
+
+                    foreach(DataRow row in NewBusinessNoBudgetTable.Rows)
+                    {
+                        bool AddName = true;
+                        for (int i = newBusinessStart; i < BudgetTotalRow; i++)
+                        {
+                            if (row["Name"].ToString() == sSheet.Get_Cell_Text(i, 0, Year + " BUDGET"))
+                                AddName = false;
+                        }
+                        if (AddName)
+                        {
+                            sSheet.Set_Cell(RowNumber, 0, row["Name"].ToString(), SheetNumber);
+
+                            RowNumber++;
+                        }
+                    }
+
+                    int newCustomerNoBudgetTotalRows = sSheet.GetWorksheetRange("NEW BUSINESS NO BUDGET").RowCount;
+
+                    NewBusinessNoBudgetTable.Dispose();
+                    NewBusinessNoBudgetTable = null;
+
+                    sSheet.Auto_fit(0, 1, SheetNumber);
 
                     /**************************************************************************************************************************
                     * CURRENT MONTH TURNOVER SUMMARY 
@@ -107,7 +152,7 @@ namespace BudgetExcelSheets
                     RowNumber = 0;
                     SheetNumber++;
 
-                    string sqlstring = "SELECT tbl_Invoice.CustomerID, SUM(tbl_InvoiceItem.Cost_Price * tbl_InvoiceItem.Qty_Order) AS Line_Cost_Price, SUM(tbl_InvoiceItem.Net_Amount) AS Line_Sale_Price, " +
+                    sqlstring = "SELECT tbl_Invoice.CustomerID, SUM(tbl_InvoiceItem.Cost_Price * tbl_InvoiceItem.Qty_Order) AS Line_Cost_Price, SUM(tbl_InvoiceItem.Net_Amount) AS Line_Sale_Price, " +
                                 "tbl_Customer.Name, tbl_Customer.Account_Ref, " +
                                 "SUM(tbl_Product.Unit_Weight * tbl_InvoiceItem.Qty_Order) AS Line_Unit_Weight " +
                                 "FROM tbl_Invoice AS tbl_Invoice INNER JOIN " +
