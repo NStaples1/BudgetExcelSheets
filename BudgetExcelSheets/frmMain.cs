@@ -1943,6 +1943,247 @@ namespace BudgetExcelSheets
                     }
 
                     sSheet.Auto_fit(0, 2, SheetNumber);
+
+                    /**************************************************************************************************************************
+                    * THIS YR VS LAST YR SALES VAR
+                    *************************************************************************************************************************/
+                    RowNumber = 0;
+                    SheetNumber = 14;
+                    sSheet.Insert_Worksheet(Year + " VS " + LastYear + " SALES VAR", SheetNumber);
+
+                    sSheet.Set_Cell(RowNumber, 0, LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 1, "ANNUAL TOTAL", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 4, Year, SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 5, "ANNUAL TOTAL", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 8, Year + " VAR TO " + LastYear, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 9, "TONNES", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 12, "REVENUE", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 15, "ASP/T", SheetNumber);
+
+                    sSheet.Set_Rotation("A1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+                    sSheet.Set_Font_Size("A1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                    sSheet.Set_Bold_Range("A1:AN1", true, SheetNumber);
+                    sSheet.Merge_Cells("A1:A2", SheetNumber);
+                    sSheet.Set_Rotation("E1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+                    sSheet.Set_Font_Size("E1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                    sSheet.Merge_Cells("E1:E2", SheetNumber);
+                    sSheet.Set_Rotation("I1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+                    sSheet.Set_Font_Size("I1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                    sSheet.Merge_Cells("I1:I2", SheetNumber);
+
+                    RowNumber++;
+
+                    sSheet.Set_Cell(RowNumber, 1, "VALUE", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 2, "WEIGHT", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 3, "ASP", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 5, "VALUE", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 6, "WEIGHT", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 7, "ASP", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 9, Year + " VS " + LastYear, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 10, "%VAR", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 12, Year + " VS " + LastYear, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 13, "%VAR", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 15, Year + " VS " + LastYear, SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 16, "%VAR", SheetNumber);
+
+                    RowNumber++;
+
+                    sqlstring = "SELECT tbl_Customer.CustomerID, tbl_Customer.Account_Ref, LTRIM(RTRIM(tbl_Customer.Name)) AS Name, Inv.Line_Cost_Price, " +
+                        "Inv.Line_Sale_Price, Inv.Line_Unit_Weight, Inv.Invoice_Month, tbl_Customer.Deleted " +
+                        "FROM tbl_Customer LEFT OUTER JOIN(SELECT SUM(tbl_InvoiceItem.Cost_Price* tbl_InvoiceItem.Qty_Order) AS Line_Cost_Price, SUM(tbl_InvoiceItem.Net_Amount) AS Line_Sale_Price, " +
+                        "SUM(tbl_Product.Unit_Weight * tbl_InvoiceItem.Qty_Order) AS Line_Unit_Weight, " +
+                        "tbl_Invoice.CustomerID, MONTH(tbl_Invoice.Invoice_Date) AS Invoice_Month " +
+                        "FROM tbl_Invoice AS tbl_Invoice LEFT OUTER JOIN " +
+                        "tbl_Product RIGHT OUTER JOIN " +
+                        "tbl_InvoiceItem ON tbl_Product.ProductID = tbl_InvoiceItem.ProductID ON tbl_Invoice.InvoiceID = tbl_InvoiceItem.InvoiceID " +
+                        "WHERE(tbl_Invoice.Invoice_Date IS NULL OR " +
+                        "tbl_Invoice.Invoice_Date BETWEEN'" + LastYear + "-01-01 00:00:00' AND '" + EndDate + "') " +
+                        "GROUP BY tbl_Invoice.CustomerID, MONTH(Invoice_Date)) Inv ON tbl_Customer.CustomerID = Inv.CustomerID " +
+                "WHERE (tbl_Customer.Deleted = 0 OR Inv.Line_Sale_Price > 0)" +
+                        "ORDER BY tbl_Customer.Name ";
+
+
+                    List<string> Names = new List<string>();
+                    DataTable LastYearvsThisYearVarTable = Invoices.RetrieveDataTable(sqlstring, false);
+                    foreach(DataRow row in LastYearvsThisYearVarTable.Rows)
+                    {
+                        Names.Add(row["Name"].ToString());
+                    }
+                    List<string> NewNames = Names.Distinct().ToList();
+
+                    LastYearvsThisYearVarTable.Dispose();
+                    LastYearvsThisYearVarTable = null;
+
+                    foreach (string Name in NewNames)
+                    {
+                        sSheet.Set_Cell(RowNumber, 8, Name, SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 0, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
+
+                        sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
+                        sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
+
+                        
+                        sSheet.Set_Formula(RowNumber, 9, "=G" + (RowNumber + 1) + "-C" + (RowNumber + 1), SheetNumber, "#,##0");
+                        sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                        sSheet.Set_Formula(RowNumber, 12, "=F" + (RowNumber + 1) + "-B" + (RowNumber + 1), SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 13, "=IFERROR(M" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                        sSheet.Set_Formula(RowNumber, 15, "=H" + (RowNumber + 1) + "-D" + (RowNumber + 1), SheetNumber, "#,##0.00");
+                        sSheet.Set_Formula(RowNumber, 16, "=IFERROR(P" + (RowNumber + 1) + "/D" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                        RowNumber++;
+                    }
+                    sSheet.Set_Cell(RowNumber, 0, "TOTAL", SheetNumber);
+                    sSheet.Set_Formula(RowNumber, 1, "=SUM(B3:B" + RowNumber + ")", SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 2, "=SUM(C3:C" + RowNumber + ")", SheetNumber, "#,##0");
+                    sSheet.Set_Formula(RowNumber, 3, "=IFERROR(B" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ", 0)", SheetNumber, "£ #,##0.00");
+
+
+                    sSheet.Set_Cell(RowNumber, 4, "TOTAL", SheetNumber);
+                    sSheet.Set_Formula(RowNumber, 5, "=SUM(F3:F" + RowNumber + ")", SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 6, "=SUM(G3:G" + RowNumber + ")", SheetNumber, "#,##0");
+                    sSheet.Set_Formula(RowNumber, 7, "=IFERROR(F" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ", 0)", SheetNumber, "£ #,##0.00");
+
+                    sSheet.Set_Cell(RowNumber, 8, "TOTAL", SheetNumber);
+                    sSheet.Set_Formula(RowNumber, 9, "=SUM(J3:J" + RowNumber + ")", SheetNumber, "#,##0");
+                    sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                    sSheet.Set_Formula(RowNumber, 12, "=F" + (RowNumber + 1) + "-B" + (RowNumber + 1), SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 13, "=IFERROR(M" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                    sSheet.Set_Formula(RowNumber, 15, "=H" + (RowNumber + 1) + "-D" + (RowNumber + 1), SheetNumber, "#,##0.00");
+                    sSheet.Set_Formula(RowNumber, 16, "=IFERROR(P" + (RowNumber + 1) + "/D" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                    RowNumber++;
+
+                    sSheet.Set_Bold_Range("A" + RowNumber + ":Q" + RowNumber, true, SheetNumber);
+                    sSheet.Set_AllBorders("A1: K" + RowNumber, null, BorderLineStyle.Thin, SheetNumber);
+                    sSheet.Set_AllBorders("M1: N" + RowNumber, null, BorderLineStyle.Thin, SheetNumber);
+                    sSheet.Set_AllBorders("P1: Q" + RowNumber, null, BorderLineStyle.Thin, SheetNumber);
+                    sSheet.Set_FontColour("A1:A2", LightGreen, null, SheetNumber);
+                    sSheet.Set_FontColour("E1:E2", LightGreen, null, SheetNumber);
+                    sSheet.Set_FontColour("I1:J2", LightGreen, null, SheetNumber);
+                    sSheet.Set_FontColour("M1:M2", Color.Orange, null, SheetNumber);
+                    sSheet.Set_FontColour("P1:P2", Color.Plum, null, SheetNumber);
+                    sSheet.Set_FontColour("B1:D" + RowNumber, Color.LightGray, null, SheetNumber);
+                    sSheet.Set_FontColour("F1:H" + RowNumber, Color.LightGray, null, SheetNumber);
+
+                    sSheet.Set_Conditional_Formatting("J3:K" + RowNumber, ConditionalFormattingExpressionCondition.LessThan, "0", Color.Yellow, null, SheetNumber);
+                    sSheet.Set_Conditional_Formatting("M3:N" + RowNumber, ConditionalFormattingExpressionCondition.LessThan, "0", Color.Orange, null, SheetNumber);
+                    sSheet.Set_Conditional_Formatting("P3:Q" + RowNumber, ConditionalFormattingExpressionCondition.LessThan, "0", Color.Plum, null, SheetNumber);
+
+                    sSheet.Set_Column_Width(0, 46.43, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(1, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(2, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(3, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(4, 46.43, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(5, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(6, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(7, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(8, 46.43, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(9, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(10, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(12, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(13, 11.86, Year + " VS " + LastYear + " SALES VAR"); 
+                    sSheet.Set_Column_Width(15, 11.86, Year + " VS " + LastYear + " SALES VAR");
+                    sSheet.Set_Column_Width(16, 11.86, Year + " VS " + LastYear + " SALES VAR");
+
+                    /**************************************************************************************************************************
+                    * THIS YR BUDGET VS THIS YR ACTUAL VAR
+                    *************************************************************************************************************************/
+                    RowNumber = 0;
+                    SheetNumber++;
+
+                    sSheet.Insert_Worksheet(Year + " BUDGET VS " + Year + " ACTUALS", SheetNumber);
+
+                    sSheet.Set_Cell(RowNumber, 0, Year + " BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 1, "ANNUAL TOTAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 4, Year + " ACTUAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 5, "ANNUAL TOTAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 8, "BUDGET VAR TO ACTUAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+                    sSheet.Set_Cell(RowNumber, 9, "REVENUE", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+
+                    sSheet.Set_Rotation("A1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+                    sSheet.Set_Font_Size("A1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                    sSheet.Set_Bold_Range("A1:AN1", true, SheetNumber);
+                    sSheet.Merge_Cells("A1:A2", SheetNumber);
+                    sSheet.Set_Rotation("E1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+                    sSheet.Set_Font_Size("E1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                    sSheet.Merge_Cells("E1:E2", SheetNumber);
+                    sSheet.Set_Rotation("I1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+                    sSheet.Set_Font_Size("I1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                    sSheet.Merge_Cells("I1:I2", SheetNumber);
+
+                    RowNumber++;
+
+                    sSheet.Set_Cell(RowNumber, 1, "VALUE", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 2, "WEIGHT", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 3, "ASP", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 5, "VALUE", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 6, "WEIGHT", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 7, "ASP", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 9, Year + " VAR", SheetNumber);
+                    sSheet.Set_Cell(RowNumber, 10, "%VAR", SheetNumber);
+
+                    RowNumber++;
+
+                    for (int i = 3; i < ThisYearRowCount; i++)
+                    {
+                        sSheet.Set_Formula(RowNumber, 0, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ,13,FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
+                        sSheet.Set_Formula(RowNumber, 4, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 8, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 9, "=IFERROR(F" + (RowNumber + 1) + "-B" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+
+                        RowNumber++;
+                    }
+
+                    sSheet.Set_Cell(RowNumber, 0, "TOTAL", SheetNumber);
+                    sSheet.Set_Formula(RowNumber, 1, "=SUM(B3:B" + RowNumber + ")", SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 2, "=SUM(C3:C" + RowNumber + ")", SheetNumber, "#,##0");
+                    sSheet.Set_Formula(RowNumber, 3, "=IFERROR(B" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ", 0)", SheetNumber, "£ #,##0.00");
+
+
+                    sSheet.Set_Cell(RowNumber, 4, "TOTAL", SheetNumber);
+                    sSheet.Set_Formula(RowNumber, 5, "=SUM(F3:F" + RowNumber + ")", SheetNumber, "£ #,##0");
+                    sSheet.Set_Formula(RowNumber, 6, "=SUM(G3:G" + RowNumber + ")", SheetNumber, "#,##0");
+                    sSheet.Set_Formula(RowNumber, 7, "=IFERROR(F" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ", 0)", SheetNumber, "£ #,##0.00");
+
+                    sSheet.Set_Cell(RowNumber, 8, "TOTAL", SheetNumber);
+                    sSheet.Set_Formula(RowNumber, 9, "=SUM(J3:J" + RowNumber + ")", SheetNumber, "#,##0");
+                    sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+
+                    RowNumber++;
+
+
+                    sSheet.Set_AllBorders("A1:K" + RowNumber, null, BorderLineStyle.Thin, SheetNumber);
+                    sSheet.Set_Conditional_Formatting("J3:K" + RowNumber, ConditionalFormattingExpressionCondition.LessThan, "0", null, Color.Red, SheetNumber);
+                    sSheet.Set_FontColour("A1:J2", LightGreen, null, SheetNumber);
+                    sSheet.Set_FontColour("B1:D" + RowNumber, Color.LightGray, null, SheetNumber);
+                    sSheet.Set_FontColour("F1:H" + RowNumber, Color.LightGray, null, SheetNumber);
+
+                    sSheet.Set_Column_Width(0, 46.43, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(1, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(2, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(3, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(4, 46.43, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(5, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(6, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(7, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(8, 46.43, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(9, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+                    sSheet.Set_Column_Width(10, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
                 }
                 catch (Exception ex)
                 {
