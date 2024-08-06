@@ -54,6 +54,7 @@ namespace BudgetExcelSheets
                     string Year = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("yyyy");
                     string LastYear = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-1).ToString("yyyy");
                     string Month = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("MMMM").ToUpper();
+                    var MonthNo = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).Month;
                     clsInvoices Invoices = new clsInvoices();
                     int RowNumber = 0;
                     int SheetNumber = 0;
@@ -703,7 +704,7 @@ namespace BudgetExcelSheets
 
                     SheetNumber++;
                     EndDate = LastYear + "-12-31";
-                    MonthSalesPerCustomerSheets(sSheet, SheetNumber, LastYear, EndDate, LightGreen);
+                    MonthSalesPerCustomerSheets(sSheet, SheetNumber, LastYear, EndDate, LightGreen, MonthNo);
 
                     int LastYearRowCount = sSheet.GetWorksheetRange(LastYear + " MONTH SALES PER CUSTOMER").RowCount;
 
@@ -1948,7 +1949,7 @@ namespace BudgetExcelSheets
                     * THIS YR VS LAST YR SALES VAR
                     *************************************************************************************************************************/
                     RowNumber = 0;
-                    SheetNumber = 14;
+                    SheetNumber = 10;
                     sSheet.Insert_Worksheet(Year + " VS " + LastYear + " SALES VAR", SheetNumber);
 
                     sSheet.Set_Cell(RowNumber, 0, LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Center);
@@ -2018,9 +2019,9 @@ namespace BudgetExcelSheets
                     {
                         sSheet.Set_Cell(RowNumber, 8, Name, SheetNumber);
                         sSheet.Set_Formula(RowNumber, 0, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
-                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
-                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
-                        sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
+                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,41,FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,42,FALSE),0)", SheetNumber, "#,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,43,FALSE),0)", SheetNumber, "£ #,##0.00");
 
                         sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
                         sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
@@ -2136,11 +2137,11 @@ namespace BudgetExcelSheets
                     for (int i = 3; i < ThisYearRowCount; i++)
                     {
                         sSheet.Set_Formula(RowNumber, 0, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
-                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ,13,FALSE),0)", SheetNumber, "£ #,##0");
-                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
-                        sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
+                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ,14,FALSE),0)", SheetNumber, "£ #,##0");
                         sSheet.Set_Formula(RowNumber, 4, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
                         sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
+                        sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
                         sSheet.Set_Formula(RowNumber, 8, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
                         sSheet.Set_Formula(RowNumber, 9, "=IFERROR(F" + (RowNumber + 1) + "-B" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0");
                         sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
@@ -2215,7 +2216,7 @@ namespace BudgetExcelSheets
             }
         }
 
-        private void MonthSalesPerCustomerSheets(Spreadsheet sSheet, int SheetNumber, string Year, string EndDate, Color LightGreen)
+        private void MonthSalesPerCustomerSheets(Spreadsheet sSheet, int SheetNumber, string Year, string EndDate, Color LightGreen, int MonthNo = 12)
         {
             try
             {
@@ -2271,11 +2272,12 @@ namespace BudgetExcelSheets
                 sSheet.Set_Cell(RowNumber, 31, "NOV", SheetNumber);
                 sSheet.Set_Cell(RowNumber, 34, "DEC", SheetNumber);
                 sSheet.Set_Cell(RowNumber, 37, "ANNUAL TOTAL", SheetNumber);
+                sSheet.Set_Cell(RowNumber, 40, "YTD TOTAL", SheetNumber);
 
                 sSheet.Set_Cell(RowNumber, 0, Year, SheetNumber, SpreadsheetHorizontalAlignment.Center);
                 sSheet.Set_Rotation("A1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
                 sSheet.Set_Font_Size("A1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
-                sSheet.Set_Bold_Range("A1:AN1", true, SheetNumber);
+                sSheet.Set_Bold_Range("A1:AQ1", true, SheetNumber);
                 sSheet.Merge_Cells("A1:A2", SheetNumber);
 
                 sSheet.Set_FontColour("A1:AK2", LightGreen, Color.Black, SheetNumber);
@@ -2290,9 +2292,13 @@ namespace BudgetExcelSheets
                     sSheet.Set_Cell(RowNumber, i + 2, "ASP", SheetNumber);
                 }
 
+                sSheet.Set_Cell(RowNumber, 40, "YTD VALUE", SheetNumber);
+                sSheet.Set_Cell(RowNumber, 41, "YTD WEIGHT", SheetNumber);
+                sSheet.Set_Cell(RowNumber, 42, "YTD ASP", SheetNumber);
+
                 RowNumber++;
 
-                sSheet.FormatCell("B:AN", "£ #,##0", SheetNumber);
+                sSheet.FormatCell("B:AQ", "£ #,##0", SheetNumber);
 
                 foreach (var priorYearSalesGroup in PriorYearSaleList.GroupBy(g => new { g.Name, g.Deleted }))
                 {
@@ -2316,16 +2322,77 @@ namespace BudgetExcelSheets
                     sSheet.Set_Formula(RowNumber, 38, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + "+O" + (RowNumber + 1) + "+R" + (RowNumber + 1) + "+U" + (RowNumber + 1) + "+X" + (RowNumber + 1) +
                     "+AA" + (RowNumber + 1) + "+AD" + (RowNumber + 1) + "+AG" + (RowNumber + 1) + "+AJ" + (RowNumber + 1) + ")", SheetNumber, "#,##0");
                     sSheet.Set_Formula(RowNumber, 39, "=IFERROR(AL" + (RowNumber + 1) + "/AM" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+                    switch (MonthNo)
+                    {
+                        case 1:
+                            sSheet.Set_Formula(RowNumber, 40, "=IFERROR(B" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+                            sSheet.Set_Formula(RowNumber, 41, "=IFERROR(C" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+                            break;
+                        case 2:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 3:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 4:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 5:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + "+O" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 6:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + "+O" + (RowNumber + 1) + "+R" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 7:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + "+T" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + "+O" + (RowNumber + 1) + "+R" + (RowNumber + 1) + "+U" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 8:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + "+T" + (RowNumber + 1) + "+W" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + "+O" + (RowNumber + 1) + "+R" + (RowNumber + 1) + "+U" + (RowNumber + 1) + "+X" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 9:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + "+T" + (RowNumber + 1) + "+W" + (RowNumber + 1) +
+                    "+Z" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + "+F" + (RowNumber + 1) + "+I" + (RowNumber + 1) + "+L" + (RowNumber + 1) + "+O" + (RowNumber + 1) + "+R" + (RowNumber + 1) + "+U" + (RowNumber + 1) + "+X" + (RowNumber + 1) +
+                    "+AA" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 10:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + "+T" + (RowNumber + 1) + "+W" + (RowNumber + 1) +
+                    "+Z" + (RowNumber + 1) + "+AC" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + " + F" + (RowNumber + 1) + " + I" + (RowNumber + 1) + " + L" + (RowNumber + 1) + " + O" + (RowNumber + 1) + " + R" + (RowNumber + 1) + " + U" + (RowNumber + 1) + " + X" + (RowNumber + 1) +
+                    "+AA" + (RowNumber + 1) + "+AD" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 11:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + "+T" + (RowNumber + 1) + "+W" + (RowNumber + 1) +
+                    "+Z" + (RowNumber + 1) + "+AC" + (RowNumber + 1) + "+AF" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + " + F" + (RowNumber + 1) + " + I" + (RowNumber + 1) + " + L" + (RowNumber + 1) + " + O" + (RowNumber + 1) + " + R" + (RowNumber + 1) + " + U" + (RowNumber + 1) + " + X" + (RowNumber + 1) +
+                    "+AA" + (RowNumber + 1) + "+AD" + (RowNumber + 1) + "+AG" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                        case 12:
+                            sSheet.Set_Formula(RowNumber, 40, "=SUM(B" + (RowNumber + 1) + "+E" + (RowNumber + 1) + "+H" + (RowNumber + 1) + "+K" + (RowNumber + 1) + "+N" + (RowNumber + 1) + "+Q" + (RowNumber + 1) + "+T" + (RowNumber + 1) + "+W" + (RowNumber + 1) +
+                    "+Z" + (RowNumber + 1) + "+AC" + (RowNumber + 1) + "+AF" + (RowNumber + 1) + "+AI" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            sSheet.Set_Formula(RowNumber, 41, "=SUM(C" + (RowNumber + 1) + " + F" + (RowNumber + 1) + " + I" + (RowNumber + 1) + " + L" + (RowNumber + 1) + " + O" + (RowNumber + 1) + " + R" + (RowNumber + 1) + " + U" + (RowNumber + 1) + " + X" + (RowNumber + 1) +
+                    "+AA" + (RowNumber + 1) + "+AD" + (RowNumber + 1) + "+AG" + (RowNumber + 1) + "+AJ" + (RowNumber + 1) + ")", SheetNumber, "£ #,##0");
+                            break;
+                    }
+                    sSheet.Set_Formula(RowNumber, 42, "=IFERROR(AO" + (RowNumber + 1) + "/AP" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
                     RowNumber++;
                 }
 
                 sSheet.Set_Column_Width(0, 46.43, Year + " MONTH SALES PER CUSTOMER");
 
-                for (int i = 1; i <= 39; i++)
+                for (int i = 1; i <= 42; i++)
                     sSheet.Set_Column_Width(i, 11.86, Year + " MONTH SALES PER CUSTOMER");
 
-                sSheet.Set_FontColour("AL1:AN" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
-                sSheet.Set_AllBorders("A1:AN" + RowNumber, Color.Black, BorderLineStyle.Thin, SheetNumber);
+                sSheet.Set_FontColour("AL1:AQ" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
+                sSheet.Set_AllBorders("A1:AQ" + RowNumber, Color.Black, BorderLineStyle.Thin, SheetNumber);
                 sSheet.Set_OutsideBorders("A1:A" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
                 sSheet.Set_OutsideBorders("E1:G" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
                 sSheet.Set_OutsideBorders("K1:M" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
@@ -2333,7 +2400,7 @@ namespace BudgetExcelSheets
                 sSheet.Set_OutsideBorders("W1:Y" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
                 sSheet.Set_OutsideBorders("AC1:AE" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
                 sSheet.Set_OutsideBorders("AI1:AK" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
-                sSheet.Set_OutsideBorders("A1:AN" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
+                sSheet.Set_OutsideBorders("A1:AQ" + RowNumber, Color.Black, SheetNumber, BorderLineStyle.Medium);
 
                 sSheet.Set_Cell(RowNumber, 0, "TOTAL", SheetNumber, SpreadsheetHorizontalAlignment.Left);
 
@@ -2344,9 +2411,13 @@ namespace BudgetExcelSheets
                     sSheet.Set_Formula(RowNumber, (i + 2), "=IFERROR(" + sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
                 }
 
-                sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":AN" + (RowNumber + 1), Color.Black, SheetNumber);
-                sSheet.Set_OutsideBorders("A" + (RowNumber + 1) + ":AN" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
-                sSheet.Set_FontColour("A" + (RowNumber + 1) + ":AN" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
+                sSheet.Set_Formula(RowNumber, 40, "=SUM(" + sSheet.GetExcelColumnName(41) + "3:" + sSheet.GetExcelColumnName(41) + (RowNumber) + ")", SheetNumber, "£ #,##0.00");
+                sSheet.Set_Formula(RowNumber, 41, "=SUM(" + sSheet.GetExcelColumnName(42) + "3:" + sSheet.GetExcelColumnName(42) + (RowNumber) + ")", SheetNumber);
+                sSheet.Set_Formula(RowNumber, 42, "=IFERROR(" + sSheet.GetExcelColumnName(41) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(42) + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+                sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":AQ" + (RowNumber + 1), Color.Black, SheetNumber);
+                sSheet.Set_OutsideBorders("A" + (RowNumber + 1) + ":AQ" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+                sSheet.Set_FontColour("A" + (RowNumber + 1) + ":AQ" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
 
                 sSheet.FormatCell("C:C", "#,##0", SheetNumber);
                 sSheet.FormatCell("F:F", "#,##0", SheetNumber);
@@ -2361,6 +2432,7 @@ namespace BudgetExcelSheets
                 sSheet.FormatCell("AG:AG", "#,##0", SheetNumber);
                 sSheet.FormatCell("AJ:AJ", "#,##0", SheetNumber);
                 sSheet.FormatCell("AM:AM", "#,##0", SheetNumber);
+                sSheet.FormatCell("AP:AP", "#,##0", SheetNumber);
             }
             catch (Exception ex)
             {
