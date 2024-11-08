@@ -424,7 +424,16 @@ namespace DXTools
                 workSheet.Columns[ColumnIndex].WidthInCharacters = Width;
         }
 
-        public void Set_Row_Height(int RowIndex, double Height, string SheetName)
+      public void Set_Column_Width(int ColumnIndex, double Width, int SheetIndex)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetIndex];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet Name " + SheetIndex);
+         else
+            workSheet.Columns[ColumnIndex].WidthInCharacters = Width;
+      }
+
+      public void Set_Row_Height(int RowIndex, double Height, string SheetName)
         {
             Worksheet workSheet = workbook.Worksheets[SheetName];
             if (workSheet == null)
