@@ -105,25 +105,25 @@ namespace BudgetExcelSheets
 
                SheetNumber++;
                RowNumber = 0;
-               //sqlstring = "SELECT tbl_Customer.Name AS Name " +
-               //"FROM tbl_Customer LEFT OUTER JOIN " +
-               //    "(SELECT COUNT(tbl_Customer.Account_Ref) AS Account, tbl_Customer.Name, tbl_Customer.CustomerID " +
-               //    "FROM tbl_Customer INNER JOIN " +
-               //    "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
-               //    "WHERE (tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + LastYear + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + LastYear + "-12-31 00:00:00', 102)) AND(tbl_Customer.Deleted = 0) " +
-               //    "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID) InvoicesPrevYear ON tbl_Customer.CustomerID = InvoicesPrevYear.CustomerID LEFT OUTER JOIN " +
-               //    "(SELECT COUNT(tbl_Customer.Account_Ref) AS Account, tbl_Customer.Name, tbl_Customer.CustomerID " +
-               //    "FROM tbl_Customer INNER JOIN " +
-               //    "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
-               //    "WHERE(tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + Year + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + Year + "-12-31 00:00:00', 102)) AND(tbl_Customer.Deleted = 0) " +
-               //    "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID) InvoicesThisYear ON tbl_Customer.CustomerID = InvoicesThisYear.CustomerID " +
-               //    "WHERE InvoicesPrevYear.CustomerID IS NULL AND NOT(InvoicesThisYear.CustomerID IS NULL) ";
+               sqlstring = "SELECT tbl_Customer.Name AS Name " +
+               "FROM tbl_Customer LEFT OUTER JOIN " +
+                   "(SELECT COUNT(tbl_Customer.Account_Ref) AS Account, tbl_Customer.Name, tbl_Customer.CustomerID " +
+                   "FROM tbl_Customer INNER JOIN " +
+                   "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
+                   "WHERE (tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + LastYear + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + LastYear + "-12-31 00:00:00', 102)) AND(tbl_Customer.Deleted = 0) " +
+                   "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID) InvoicesPrevYear ON tbl_Customer.CustomerID = InvoicesPrevYear.CustomerID LEFT OUTER JOIN " +
+                   "(SELECT COUNT(tbl_Customer.Account_Ref) AS Account, tbl_Customer.Name, tbl_Customer.CustomerID " +
+                   "FROM tbl_Customer INNER JOIN " +
+                   "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
+                   "WHERE(tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + Year + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + Year + "-12-31 00:00:00', 102)) AND(tbl_Customer.Deleted = 0) " +
+                   "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID) InvoicesThisYear ON tbl_Customer.CustomerID = InvoicesThisYear.CustomerID " +
+                   "WHERE InvoicesPrevYear.CustomerID IS NULL AND NOT(InvoicesThisYear.CustomerID IS NULL) ";
 
 
-               sqlstring = "SELECT DISTINCT tbl_Customer.Name " +
-               "FROM tbl_Customer INNER JOIN " +
-               "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
-               "WHERE (tbl_Customer.Deleted = 0) AND  (tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + LastYear + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + Year + "-12-31 00:00:00', 102))";
+               //sqlstring = "SELECT DISTINCT tbl_Customer.Name " +
+               //"FROM tbl_Customer INNER JOIN " +
+               //"tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
+               //"WHERE (tbl_Customer.Deleted = 0) AND  (tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + LastYear + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + Year + "-12-31 00:00:00', 102))";
                DataTable NewBusinessNoBudgetTable = Invoices.RetrieveDataTable(sqlstring, false);
 
                sSheet.Add_Worksheet("NEW BUSINESS NO BUDGET");
@@ -150,6 +150,7 @@ namespace BudgetExcelSheets
                NewBusinessNoBudgetTable = null;
 
                sSheet.Auto_fit(0, 1, SheetNumber);
+
 
                /**************************************************************************************************************************
                * CURRENT MONTH TURNOVER SUMMARY 
@@ -781,7 +782,9 @@ namespace BudgetExcelSheets
 
                   DataTable newBdt = Invoices.RetrieveDataTable(sqlstring);
 
-                  var MonthStart = Classes.Global.ConvertToDateTime(newBdt.Rows[0]["Invoice_Date"]).Month;
+                  var MonthStart = 1;
+                  if (newBdt.Rows.Count > 0)
+                     MonthStart = Classes.Global.ConvertToDateTime(newBdt.Rows[0]["Invoice_Date"]).Month;
                   int StartColumn = 1;
 
                   sSheet.Set_Cell(RowNumber, 0, Name, SheetNumber);
@@ -1867,7 +1870,8 @@ namespace BudgetExcelSheets
                for (int i = 1; i < 67; i++)
                   sSheet.Set_Column_Width(i, 13.57, "THIS YR V LAST YR");
 
-               sSheet.Hide_Columns(StartIndex, 60, SheetNumber);
+               if(StartIndex < 60)
+                  sSheet.Hide_Columns(StartIndex, 60, SheetNumber);
 
                /**************************************************************************************************************************
                * CUSTOMERS NOT BOUGHT THIS MONTH
