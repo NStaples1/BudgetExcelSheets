@@ -323,6 +323,11 @@ namespace DXTools
          }
       }
 
+      public int Get_Sheet_Count()
+      {
+         return workbook.Worksheets.Count;
+      }
+
       public void Auto_Filter(string CellRange, int SheetIndex = 0)
       {
          Worksheet workSheet = workbook.Worksheets[SheetIndex];
@@ -368,6 +373,24 @@ namespace DXTools
          Worksheet workSheet = workbook.Worksheets.Insert(SheetIndex, SheetName);
          if (workSheet == null)
             throw new Exception("Unable to create Sheet " + SheetName);
+      }
+
+      public void Change_Worksheet_Order(int sheetIndex, int order)
+      {
+         Worksheet workSheet = workbook.Worksheets[sheetIndex];
+         if (workSheet != null)
+         {
+            workSheet.Move(order);
+         }
+      }
+
+      public void Change_Worksheet_Order(string SheetName, int order)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetName];
+         if (workSheet != null)
+         {
+            workSheet.Move(order);
+         }
       }
 
       #endregion

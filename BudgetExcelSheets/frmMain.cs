@@ -27,6 +27,7 @@ using DevExpress.Spreadsheet.Charts;
 using DXTools.Classes;
 using DevExpress.Utils.Svg;
 using System.Security.Principal;
+using DevExpress.XtraEditors.Popup;
 
 namespace BudgetExcelSheets
 {
@@ -75,6 +76,8 @@ namespace BudgetExcelSheets
                int NewBusinessWonStart = 0;
                int NewBusinessWonEnd = 0;
                int newBusinessStart = 0;
+               int newBusinessEnd = 0;
+               SheetNumber = sSheet.Get_Worksheet_Index(Year + " BUDGET");
 
                List<BudgetModel> BudgetList = ConvertBudgetSheetToDataTable(SheetNumber, BudgetTotalRow, sSheet);
 
@@ -82,16 +85,21 @@ namespace BudgetExcelSheets
 
                for (int i = 1; i < BudgetTotalRow; i++)
                {
-                  if (!string.IsNullOrEmpty(Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 13, 0))))
-                     sSheet.Set_Formula(RowNumber, 13, "=SUM(B" + (i + 1) + ":" + sSheet.GetExcelColumnName(MonthColumnIndex) + (i + 1) + ")", 0, "#,##0");
+                  sSheet.Set_Formula(RowNumber, 13, "=SUM(B" + (i + 1) + ":" + sSheet.GetExcelColumnName(MonthColumnIndex) + (i + 1) + ")", 0, "#,##0");
 
-                  if (Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, 0)) == "NEW BUSINESS WON IN " + LastYear + " IMPACTING " + Year)
+                  if (Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, SheetNumber)) == "NEW BUSINESS WON IN " + LastYear + " IMPACTING " + Year ||
+                     Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, SheetNumber)) == "NEW BUSINESS IN " + LastYear ||
+                     Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, SheetNumber)) == "NEW BUSINESS WON IN " + LastYear)
+                  {
                      NewBusinessWonStart = i + 1;
-                  if (Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, 0)) == "NEW BUSINESS IN " + Year)
+                  }
+                  if (Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, SheetNumber)) == "NEW BUSINESS WON IN " + Year || Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, 0)) == "NEW BUSINESS IN " + Year)
                   {
                      NewBusinessWonEnd = i - 1;
                      newBusinessStart = i + 1;
                   }
+                  if (Classes.Global.ConvertToString(sSheet.Get_Cell_Value(RowNumber, 0, SheetNumber)) == "New / OTHER")
+                     newBusinessEnd = i - 1;
 
                   RowNumber++;
                }
@@ -102,7 +110,7 @@ namespace BudgetExcelSheets
                /**************************************************************************************************************************
                * NEW BUSINESS NO BUDGET
                *************************************************************************************************************************/
-
+               SheetNumber = (sSheet.Get_Sheet_Count() - 1);
                SheetNumber++;
                RowNumber = 0;
                sqlstring = "SELECT tbl_Customer.Name AS Name " +
@@ -124,6 +132,7 @@ namespace BudgetExcelSheets
                //"FROM tbl_Customer INNER JOIN " +
                //"tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
                //"WHERE (tbl_Customer.Deleted = 0) AND  (tbl_Invoice.Invoice_Date BETWEEN CONVERT(DATETIME, '" + LastYear + "-01-01 00:00:00', 102) AND CONVERT(DATETIME, '" + Year + "-12-31 00:00:00', 102))";
+
                DataTable NewBusinessNoBudgetTable = Invoices.RetrieveDataTable(sqlstring, false);
 
                sSheet.Add_Worksheet("NEW BUSINESS NO BUDGET");
@@ -291,7 +300,7 @@ namespace BudgetExcelSheets
 
                Color Colour = System.Drawing.ColorTranslator.FromHtml("#009999");
 
-               SheetNumber = 0;
+               SheetNumber++;
                RowNumber = 1;
                sSheet.Insert_Worksheet("DATA FOR PRESENTATION", SheetNumber);
 
@@ -335,9 +344,9 @@ namespace BudgetExcelSheets
 
                RowNumber++;
 
-               sSheet.Set_Cell("H" + (RowNumber + 1), "Top 15 Customers", 0, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell("H" + (RowNumber + 1), "Top 15 Customers", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Bold(RowNumber, 0, true, SheetNumber);
-               sSheet.Set_Rotation("H" + (RowNumber + 1), 0, 90, SpreadsheetVerticalAlignment.Center);
+               sSheet.Set_Rotation("H" + (RowNumber + 1), SheetNumber, 90, SpreadsheetVerticalAlignment.Center);
                sSheet.Set_Font_Size("H" + (RowNumber + 1), 14, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Center, SheetNumber);
                sSheet.Set_FontColour("H" + (RowNumber + 1) + ":H" + (RowNumber + 1), LightGreen, Color.Black, SheetNumber);
 
@@ -490,7 +499,7 @@ namespace BudgetExcelSheets
                * SALES V BUDGET
                *************************************************************************************************************************/
 
-               SheetNumber = 6;
+               SheetNumber++;
                RowNumber = 0;
                sSheet.Insert_Worksheet("SALES V BUDGET", SheetNumber);
 
@@ -686,20 +695,6 @@ namespace BudgetExcelSheets
                sSheet.Auto_fit(0, 13, SheetNumber);
 
                /**************************************************************************************************************************
-               * THIS YEAR NEW BUSINESS
-               *************************************************************************************************************************/
-
-               SheetNumber++;
-
-               sSheet.Add_Worksheet(Year + " NEW BUSINESS");
-
-               RowNumber = 0;
-
-               sSheet.Set_Cell(RowNumber, 1, "TO BE MANUALLY FILLED IN", SheetNumber);
-
-               sSheet.Auto_fit(0, 20, SheetNumber);
-
-               /**************************************************************************************************************************
                * MONTH SALES PER CUSTOMER SHEETS
                **************************************************************************************************************************/
 
@@ -732,7 +727,7 @@ namespace BudgetExcelSheets
                Color DarkTeal = System.Drawing.ColorTranslator.FromHtml("#D9E1F2");
                Color GreenAccent = System.Drawing.ColorTranslator.FromHtml("#E2EFDA");
 
-               SheetNumber = 8;
+               SheetNumber++;
 
                sSheet.Insert_Worksheet("NEW B V BUDGET", SheetNumber);
 
@@ -747,7 +742,7 @@ namespace BudgetExcelSheets
                      NameList.Add(Value);
                }
 
-               sSheet.Set_Cell(RowNumber, 0, "NEW BUSINESS WON IN " + LastYear + " IMPACTING " + Year, SheetNumber, SpreadsheetHorizontalAlignment.Left);
+               sSheet.Set_Cell(RowNumber, 0, "NEW BUSINESS WON IN " + LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Left);
                sSheet.Set_Cell(RowNumber, 1, "JAN", SheetNumber);
                sSheet.Set_Cell(RowNumber, 2, "FEB", SheetNumber);
                sSheet.Set_Cell(RowNumber, 3, "MAR", SheetNumber);
@@ -869,7 +864,10 @@ namespace BudgetExcelSheets
                RowNumber++;
                int newBusinessthisSheet = RowNumber;
 
-               for (int i = newBusinessStart; i < (BudgetTotalRow - 2); i++)
+               if (newBusinessEnd == 0)
+                  newBusinessEnd = BudgetTotalRow - 2;
+
+               for (int i = newBusinessStart; i < newBusinessEnd; i++)
                {
                   sSheet.Set_Formula(RowNumber, 0, "='" + Year + " BUDGET'!A" + (i + 1), SheetNumber);
                   sSheet.Set_Formula(RowNumber, 1, "='" + Year + " BUDGET'!B" + (i + 1), SheetNumber, "£ #,##0");
@@ -1014,7 +1012,7 @@ namespace BudgetExcelSheets
                RowNumber++;
                int newBusinessSales = RowNumber;
 
-               for (int i = newBusinessStart; i < (BudgetTotalRow - 2); i++)
+               for (int i = newBusinessStart; i < newBusinessEnd; i++)
                {
                   sSheet.Set_Formula(RowNumber, 0, "='" + Year + " BUDGET'!A" + (i + 1), SheetNumber);
                   sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AN,2,FALSE),0)", SheetNumber, "£ #,##0");
@@ -1036,7 +1034,7 @@ namespace BudgetExcelSheets
 
                int MonthlySaleswBudget = RowNumber;
 
-               sSheet.Set_Cell(RowNumber, 0, "MONTHLY SALES - 'NEW IN 2024' WITH BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+               sSheet.Set_Cell(RowNumber, 0, "MONTHLY SALES - 'NEW IN " + Year + "' WITH BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Right);
                sSheet.Set_Formula(RowNumber, 1, "=IFERROR(SUM(B" + (newBusinessSales + 1) + ":B" + (RowNumber) + "),0)", SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 2, "=IFERROR(SUM(C" + (newBusinessSales + 1) + ":C" + (RowNumber) + "),0)", SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 3, "=IFERROR(SUM(D" + (newBusinessSales + 1) + ":D" + (RowNumber) + "),0)", SheetNumber, "£ #,##0");
@@ -1255,7 +1253,7 @@ namespace BudgetExcelSheets
                RowNumber++;
                c = newBusinessthisSheet + 1;
                oc = newBusinessSales + 1;
-               for (int i = newBusinessStart; i < (BudgetTotalRow - 2); i++)
+               for (int i = newBusinessStart; i < newBusinessEnd; i++)
                {
                   sSheet.Set_Formula(RowNumber, 0, "=A" + (c), SheetNumber);
                   sSheet.Set_Formula(RowNumber, 1, "=O" + (c), SheetNumber, "£ #,##0");
@@ -1870,7 +1868,7 @@ namespace BudgetExcelSheets
                for (int i = 1; i < 67; i++)
                   sSheet.Set_Column_Width(i, 13.57, "THIS YR V LAST YR");
 
-               if(StartIndex < 60)
+               if (StartIndex < 60)
                   sSheet.Hide_Columns(StartIndex, 60, SheetNumber);
 
                /**************************************************************************************************************************
@@ -1984,9 +1982,9 @@ namespace BudgetExcelSheets
                            int LastYearCount = (PurchasedLastYear.Rows.Count - 1);
                            string LastInvoiceDate = Classes.Global.ConvertToDateTime(PurchasedLastYear.Rows[LastYearCount].ItemArray[0]).ToString("dd-MM-yyyy");
                            sSheet.Set_Formula(RowNumber, 1, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
-                           sSheet.Set_Cell(RowNumber, 2,LastInvoiceDate, SheetNumber);
+                           sSheet.Set_Cell(RowNumber, 2, LastInvoiceDate, SheetNumber);
 
-                           sSheet.Set_Font_Size("B" +(RowNumber + 1), 11, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+                           sSheet.Set_Font_Size("B" + (RowNumber + 1), 11, SpreadsheetHorizontalAlignment.Center, SheetNumber);
                            sSheet.Set_Font_Size("C" + (RowNumber + 1), 11, SpreadsheetHorizontalAlignment.Center, SheetNumber);
 
                            RowNumber++;
@@ -2006,7 +2004,7 @@ namespace BudgetExcelSheets
                * SALES + WEIGHT EXPORT
                *************************************************************************************************************************/
                RowNumber = 0;
-               SheetNumber = 15;
+               SheetNumber++;
                sSheet.Add_Worksheet("SALES + WEIGHT EXPORT");
 
                sSheet.Set_Cell(RowNumber, 1, "VALUE", SheetNumber);
@@ -2032,7 +2030,7 @@ namespace BudgetExcelSheets
                * THIS YR VS LAST YR SALES VAR
                *************************************************************************************************************************/
                RowNumber = 0;
-               SheetNumber = 10;
+               SheetNumber++;
                sSheet.Insert_Worksheet(Year + " VS " + LastYear + " SALES VAR", SheetNumber);
 
                sSheet.Set_Cell(RowNumber, 0, LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Center);
@@ -2275,6 +2273,26 @@ namespace BudgetExcelSheets
             }
             finally
             {
+               /**************************************************************************************************************************
+              * CHANGE SHEET ORDER
+              *************************************************************************************************************************/
+               string Year = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("yyyy");
+
+               sSheet.Change_Worksheet_Order("DATA FOR PRESENTATION", 0);
+               sSheet.Change_Worksheet_Order(Year + " BUDGET", 1);
+               sSheet.Change_Worksheet_Order("NEW BUSINESS NO BUDGET", 2);
+               sSheet.Change_Worksheet_Order("SALES V BUDGET", 3);
+               //sSheet.Change_Worksheet_Order("THIS YEAR NEW BUSINESS", 4);
+               sSheet.Change_Worksheet_Order("NEW B V BUDGET", 4);
+               sSheet.Change_Worksheet_Order("SALES V PRIOR YEARS", 5);
+               sSheet.Change_Worksheet_Order("THIS YR V LAST YR", 6);
+               sSheet.Change_Worksheet_Order("CUSTOMERS NOT BOUGHT THIS MONTH", 7);
+               //sSheet.Change_Worksheet_Order("THIS YR VS LAST YR SALES VAR", 8);
+               //sSheet.Change_Worksheet_Order("THIS YR BUDGET VS THIS YR ACTUAL", 8);
+               //sSheet.Change_Worksheet_Order("CURRENT MONTH TURNOVER SUMMARY", 9);
+               //sSheet.Change_Worksheet_Order("YTD SALES", 10);
+               
+
                /**************************************************************************************************************************
                * FINAL BITS AND SAVING
                *************************************************************************************************************************/
