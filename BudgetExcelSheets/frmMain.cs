@@ -28,6 +28,7 @@ using DXTools.Classes;
 using DevExpress.Utils.Svg;
 using System.Security.Principal;
 using DevExpress.XtraEditors.Popup;
+using System.IO;
 
 namespace BudgetExcelSheets
 {
@@ -45,6 +46,27 @@ namespace BudgetExcelSheets
       {
          using (DXTools.Spreadsheet sSheet = new DXTools.Spreadsheet())
          {
+            List<string> NewnoBudgetList = new List<string>();
+            List<string> BudgetNameList = new List<string>();
+            List<string> OutdatedList = new List<string>();
+            Color LightGreen = ColorTranslator.FromHtml("#66FFCC");
+            int Top15 = 0;
+            int NewBvBudget = 0;
+            int TotalSalesvPriorYears = 0;
+            int CustomervBdgvPy = 0;
+            int ThisYearBudget = 0;
+            int LastYearBudget = 0;
+            int PriorYearBudget = 0;
+            int ForecastWeekly = 0;
+            int NewBusinessNoBudget = 0;
+            int CurrentMonthTurnover = 0;
+            int YTDSalesSheet = 0;
+            int SalesvBudget = 0;
+            int ThisYearMonthSalesPerCustomer = 0;
+            int LastYearMonthSalesPerCustomer = 0;
+            int PriorYearMonthSalesPerCustomer = 0;
+            int ThisYearvsLastYear = 0;
+            int CustomersNotBoughtThisMonth = 0;
             try
             {
                sSheet.Show_Wait();
@@ -60,7 +82,6 @@ namespace BudgetExcelSheets
                clsInvoices Invoices = new clsInvoices();
                int RowNumber = 0;
                int SheetNumber = 0;
-               Color LightGreen = ColorTranslator.FromHtml("#66FFCC");
                string sqlstring = string.Empty;
                /**************************************************************************************************************************
                * BUDGET
@@ -78,6 +99,10 @@ namespace BudgetExcelSheets
                int newBusinessStart = 0;
                int newBusinessEnd = 0;
                SheetNumber = sSheet.Get_Worksheet_Index(Year + " BUDGET");
+               ThisYearBudget = sSheet.Get_Worksheet_Index(Year + " BUDGET");
+               LastYearBudget = sSheet.Get_Worksheet_Index(LastYear + " BUDGET");
+               ForecastWeekly = sSheet.Get_Worksheet_Index("FORECAST WITH WEIGHT");
+               int ForecastTotalRows = sSheet.GetWorksheetRange("FORECAST WITH WEIGHT").RowCount;
 
                List<BudgetModel> BudgetList = ConvertBudgetSheetToDataTable(SheetNumber, BudgetTotalRow, sSheet);
 
@@ -102,6 +127,34 @@ namespace BudgetExcelSheets
                      newBusinessEnd = i - 1;
 
                   RowNumber++;
+               }
+
+               RowNumber = 4;
+               for(int i = 4; i < ForecastTotalRows - 1; i++)
+               {
+                  SetForecastYTD(sSheet, MonthColumnIndex, RowNumber, i);
+                  RowNumber++;
+               }
+                  
+               for (int i = 1; i < (NewBusinessWonStart - 1); i++)
+               {
+                  string value = sSheet.Get_Cell_Text(i, 0, Year + " BUDGET");
+                  if (value != null)
+                     BudgetNameList.Add(value);
+               }
+
+               for (int i = NewBusinessWonStart; i < NewBusinessWonEnd; i++)
+               {
+                  string value = sSheet.Get_Cell_Text(i, 0, Year + " BUDGET");
+                  if (value != null)
+                     BudgetNameList.Add(value);
+               }
+
+               for (int i = newBusinessStart; i < newBusinessEnd; i++)
+               {
+                  string value = sSheet.Get_Cell_Text(i, 0, Year + " BUDGET");
+                  if (value != null)
+                     BudgetNameList.Add(value);
                }
 
                SheetNumber++;
@@ -136,20 +189,26 @@ namespace BudgetExcelSheets
                DataTable NewBusinessNoBudgetTable = Invoices.RetrieveDataTable(sqlstring, false);
 
                sSheet.Add_Worksheet("NEW BUSINESS NO BUDGET");
+               NewBusinessNoBudget = SheetNumber;
 
                foreach (DataRow row in NewBusinessNoBudgetTable.Rows)
                {
-                  bool AddName = true;
-                  for (int i = newBusinessStart; i < BudgetTotalRow; i++)
+                  if (row["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                     continue;
+                  else
                   {
-                     if (row["Name"].ToString() == sSheet.Get_Cell_Text(i, 0, Year + " BUDGET"))
-                        AddName = false;
-                  }
-                  if (AddName)
-                  {
-                     sSheet.Set_Cell(RowNumber, 0, row["Name"].ToString(), SheetNumber);
+                     bool AddName = true;
+                     for (int i = newBusinessStart; i < BudgetTotalRow; i++)
+                     {
+                        if (row["Name"].ToString() == sSheet.Get_Cell_Text(i, 0, Year + " BUDGET"))
+                           AddName = false;
+                     }
+                     if (AddName)
+                     {
+                        sSheet.Set_Cell(RowNumber, 0, row["Name"].ToString(), SheetNumber);
 
-                     RowNumber++;
+                        RowNumber++;
+                     }
                   }
                }
 
@@ -160,6 +219,15 @@ namespace BudgetExcelSheets
 
                sSheet.Auto_fit(0, 1, SheetNumber);
 
+               for (int i = 0; i < newCustomerNoBudgetTotalRows; i++)
+               {
+                  string value = sSheet.Get_Cell_Text(i, 0, "NEW BUSINESS NO BUDGET");
+                  if (value != null)
+                  {
+                     if (!BudgetNameList.Contains(value))
+                        NewnoBudgetList.Add(value);
+                  }
+               }
 
                /**************************************************************************************************************************
                * CURRENT MONTH TURNOVER SUMMARY 
@@ -183,6 +251,7 @@ namespace BudgetExcelSheets
                DataTable MonthTurnoverTable = Invoices.RetrieveDataTable(sqlstring, false);
 
                sSheet.Add_Worksheet("CURRENT MONTH TURNOVER SUMMARY");
+               CurrentMonthTurnover = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 0, "Customer Name", SheetNumber);
                sSheet.Set_Cell(RowNumber, 1, "Cost Price", SheetNumber);
@@ -195,15 +264,46 @@ namespace BudgetExcelSheets
 
                foreach (DataRow row in MonthTurnoverTable.Rows)
                {
-                  double Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
-                  sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
-                  sSheet.Set_Cell(RowNumber, 1, row["Line_Cost_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 2, row["Line_Sale_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                  double Profit = 0;
+                  if (row["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                  {
+                     DataRow[] EuroRow = MonthTurnoverTable.Select("Name = 'STANNAH STAIRLIFTS LTD'");
+                     double EuroCost = 0;
+                     double EuroSale = 0;
 
-                  RowNumber++;
+                     if (EuroRow.Length > 0)
+                     {
+                        EuroSale = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Sale_Price"], 2);
+                        EuroCost = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Cost_Price"], 2);
+                     }
+
+                     Profit = (Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2)) + EuroSale - EuroCost;
+
+                     sSheet.Set_Cell(RowNumber, 0, "STANNAH STAIRLIFTS LTD", SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]) + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]) + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) + Classes.Global.DivideNum(Profit, EuroCost, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) + Classes.Global.DivideNum(Profit, EuroSale, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
+                  }
+                  else if (row["Name"].ToString() == "STANNAH STAIRLIFTS LTD")
+                  {
+                     
+                  }
+                  else
+                  {
+                     Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
+                     sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, row["Line_Cost_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, row["Line_Sale_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
+                  }
                }
                sSheet.FormatCell("F2:F" + (RowNumber + 1), "#,##0", SheetNumber);
 
@@ -261,6 +361,7 @@ namespace BudgetExcelSheets
                YTDSales = resort(YTDSales, "Name", "ASC");
 
                sSheet.Add_Worksheet("YTD SALES");
+               YTDSalesSheet = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 0, "Customer Name", SheetNumber);
                sSheet.Set_Cell(RowNumber, 1, "Cost Price", SheetNumber);
@@ -273,15 +374,49 @@ namespace BudgetExcelSheets
 
                foreach (DataRow row in YTDSales.Rows)
                {
-                  double Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
-                  sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
-                  sSheet.Set_Cell(RowNumber, 1, row["Line_Cost_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 2, row["Line_Sale_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                  sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                  double Profit = 0;
+                  if (row["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                  {
+                     DataRow[] EuroRow = YTDSales.Select("Name = 'STANNAH STAIRLIFTS LTD'");
+                     double EuroCost = 0;
+                     double EuroSale = 0;
 
-                  RowNumber++;
+                     if (EuroRow.Length > 0)
+                     {
+                        EuroSale = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Sale_Price"], 2);
+                        EuroCost = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Cost_Price"], 2);
+                     }
+
+                     double Cost = Classes.Global.ConvertToDouble(row["Line_Cost_Price"]);
+                     double Sale = Classes.Global.ConvertToDouble(row["Line_Sale_Price"]);
+
+                     Profit = (Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2)) + EuroSale - EuroCost;
+
+                     sSheet.Set_Cell(RowNumber, 0, "STANNAH STAIRLIFTS LTD", SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, Cost + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, Sale + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Cost, 4) + Classes.Global.DivideNum(Profit, EuroCost, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Sale, 4) + Classes.Global.DivideNum(Profit, EuroSale, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
+                  }
+                  else if (row["Name"].ToString() == "STANNAH STAIRLIFTS LTD")
+                  {
+                     
+                  }
+                  else
+                  {
+                     Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
+                     sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, row["Line_Cost_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, row["Line_Sale_Price"], SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
+                  }
                }
                sSheet.FormatCell("F2:F" + (RowNumber + 1), "#,##0", SheetNumber);
 
@@ -302,7 +437,8 @@ namespace BudgetExcelSheets
 
                SheetNumber++;
                RowNumber = 1;
-               sSheet.Insert_Worksheet("DATA FOR PRESENTATION", SheetNumber);
+               sSheet.Insert_Worksheet("1.TOP 15", SheetNumber);
+               Top15 = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("MMMM"), SheetNumber);
                sSheet.Set_Bold(RowNumber, 0, true, SheetNumber);
@@ -343,7 +479,7 @@ namespace BudgetExcelSheets
                sSheet.Set_FontColour("I" + (RowNumber + 1) + ":O" + (RowNumber + 1), Colour, Color.White, SheetNumber);
 
                RowNumber++;
-
+               int YTDSalesTop15 = RowNumber;
                sSheet.Set_Cell("H" + (RowNumber + 1), "Top 15 Customers", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Bold(RowNumber, 0, true, SheetNumber);
                sSheet.Set_Rotation("H" + (RowNumber + 1), SheetNumber, 90, SpreadsheetVerticalAlignment.Center);
@@ -354,24 +490,48 @@ namespace BudgetExcelSheets
 
                DataTable newYTDTable = resort(YTDSales, "Line_Sale_Price", "DESC");
 
-               for (int i = 0; i < 15; i++)
+               for (int i = 0; i < 16; i++)
                {
-                  sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(newMonthTable.Rows[i]["Name"]).Trim(), SheetNumber);
-                  sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:C,3,FALSE), 0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + MonthColumnIndex + ",FALSE), 0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 3, "=" + sSheet.GetExcelColumnName(2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(3) + (RowNumber + 1), SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 4, "=IFERROR(" + sSheet.GetExcelColumnName(4) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(3) + (RowNumber + 1) + ",\"NO BUDGET\")", SheetNumber, "#,##0 %");
-                  sSheet.Set_Formula(RowNumber, 5, "=VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!$A:D,4,FALSE)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 6, "=VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!$A:F,6,FALSE)", SheetNumber, "#,##0");
+                  if (newMonthTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFTS LTD")
+                  { }
+                  else
+                  {
+                     if (newMonthTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                        sSheet.Set_Cell(RowNumber, 0, "STANNAH STAIRLIFTS LTD", SheetNumber);
+                     else
+                        sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(newMonthTable.Rows[i]["Name"]).Trim(), SheetNumber);
 
-                  sSheet.Set_Cell(RowNumber, 8, Classes.Global.ConvertToString(newYTDTable.Rows[i]["Name"]).Trim(), SheetNumber);
-                  sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'YTD SALES'!A:C,3,FALSE), 0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 10, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O,14,FALSE), 0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 11, "=" + sSheet.GetExcelColumnName(10) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(11) + (RowNumber + 1), SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 12, "=IFERROR(" + sSheet.GetExcelColumnName(12) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(11) + (RowNumber + 1) + ",\"NO BUDGET\")", SheetNumber, "#,##0 %");
-                  sSheet.Set_Formula(RowNumber, 13, "=VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'YTD SALES'!$A:D,4,FALSE)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 14, "=VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'YTD SALES'!$A:F,6,FALSE)", SheetNumber, "#,##0");
-                  RowNumber++;
+                     sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:C,3,FALSE), 0)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + MonthColumnIndex + ",FALSE), 0)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 3, "=" + sSheet.GetExcelColumnName(2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(3) + (RowNumber + 1), SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 4, "=IFERROR(" + sSheet.GetExcelColumnName(4) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(3) + (RowNumber + 1) + ",\"NO BUDGET\")", SheetNumber, "#,##0 %");
+                     sSheet.Set_Formula(RowNumber, 5, "=VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!$A:D,4,FALSE)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 6, "=VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!$A:F,6,FALSE)", SheetNumber, "#,##0");
+                     RowNumber++;
+                  }
+               }
+
+               RowNumber = YTDSalesTop15;
+
+               for(int i = 0; i < 16; i++)
+               {
+                  if (newYTDTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                  { }
+                  else
+                  {
+                     if (newYTDTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                        sSheet.Set_Cell(RowNumber, 8, "STANNAH STAIRLIFTS LTD", SheetNumber);
+                     else
+                        sSheet.Set_Cell(RowNumber, 8, Classes.Global.ConvertToString(newYTDTable.Rows[i]["Name"]).Trim(), SheetNumber);
+
+                     sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'YTD SALES'!A:C,3,FALSE), 0)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 10, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O,14,FALSE), 0)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 11, "=" + sSheet.GetExcelColumnName(10) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(11) + (RowNumber + 1), SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 12, "=IFERROR(" + sSheet.GetExcelColumnName(12) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(11) + (RowNumber + 1) + ",\"NO BUDGET\")", SheetNumber, "#,##0 %");
+                     sSheet.Set_Formula(RowNumber, 13, "=VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'YTD SALES'!$A:D,4,FALSE)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 14, "=VLOOKUP(" + sSheet.GetExcelColumnName(9) + (RowNumber + 1) + ",'YTD SALES'!$A:F,6,FALSE)", SheetNumber, "#,##0");
+                     RowNumber++;
+                  }
                }
 
                sSheet.Merge_Cells("H" + (RowNumber - 14) + ":H" + (RowNumber), SheetNumber);
@@ -400,7 +560,7 @@ namespace BudgetExcelSheets
                RowNumber++;
 
                sSheet.Set_Cell(RowNumber, 0, "TOTAL OF OTHERS", SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Center);
-               sSheet.Set_Formula(RowNumber, 1, "='CURRENT MONTH TURNOVER SUMMARY'!C" + (MonthlyTotalRowNumber) + "-'DATA FOR PRESENTATION'!B" + (RowNumber - 1), SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 1, "='CURRENT MONTH TURNOVER SUMMARY'!C" + (MonthlyTotalRowNumber) + "-'1.TOP 15'!B" + (RowNumber - 1), SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 2, "='" + Year + " BUDGET'!" + sSheet.GetExcelColumnName(MonthColumnIndex) + BudgetTotalRow + " - C" + (RowNumber - 1), SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 3, "=B" + (RowNumber + 1) + "-C" + (RowNumber + 1), SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 4, "=D" + (RowNumber + 1) + "/C" + (RowNumber + 1), SheetNumber, "#,##0 %");
@@ -410,7 +570,7 @@ namespace BudgetExcelSheets
                sSheet.Set_FontColour("A" + (RowNumber + 1) + ":G" + (RowNumber + 1), Colour, Color.White, SheetNumber);
 
                sSheet.Set_Cell(RowNumber, 8, "TOTAL OF OTHERS", SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Center);
-               sSheet.Set_Formula(RowNumber, 9, "='YTD SALES'!C" + (YTDTotalRowNumber) + "-'DATA FOR PRESENTATION'!J" + (RowNumber - 1), SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 9, "='YTD SALES'!C" + (YTDTotalRowNumber) + "-'1.TOP 15'!J" + (RowNumber - 1), SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 10, "='" + Year + " BUDGET'!N" + BudgetTotalRow + " - K" + (RowNumber - 1), SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 11, "=J" + (RowNumber + 1) + "-K" + (RowNumber + 1), SheetNumber, "£ #,##0");
                sSheet.Set_Formula(RowNumber, 12, "=L" + (RowNumber + 1) + "/K" + (RowNumber + 1), SheetNumber, "#,##0 %");
@@ -442,8 +602,8 @@ namespace BudgetExcelSheets
                sSheet.Set_Font_Size("I" + (RowNumber + 1), 12, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Center, SheetNumber);
                sSheet.Set_FontColour("I" + (RowNumber + 1) + ":O" + (RowNumber + 1), Colour, Color.White, SheetNumber);
 
-               sSheet.Set_Cell_Alignment("B" + (RowNumber - 19) + ":G" + (RowNumber + 1), "DATA FOR PRESENTATION", SpreadsheetHorizontalAlignment.Center, SpreadsheetVerticalAlignment.Center, true);
-               sSheet.Set_Cell_Alignment("J" + (RowNumber - 19) + ":O" + (RowNumber + 1), "DATA FOR PRESENTATION", SpreadsheetHorizontalAlignment.Center, SpreadsheetVerticalAlignment.Center, true);
+               sSheet.Set_Cell_Alignment("B" + (RowNumber - 19) + ":G" + (RowNumber + 1), "1.TOP 15", SpreadsheetHorizontalAlignment.Center, SpreadsheetVerticalAlignment.Center, true);
+               sSheet.Set_Cell_Alignment("J" + (RowNumber - 19) + ":O" + (RowNumber + 1), "1.TOP 15", SpreadsheetHorizontalAlignment.Center, SpreadsheetVerticalAlignment.Center, true);
 
                newMonthTable.Dispose();
                newMonthTable = null;
@@ -492,8 +652,8 @@ namespace BudgetExcelSheets
                sSheet.Set_OutsideBorders("I24:O24", Color.Black, SheetNumber, DevExpress.Spreadsheet.BorderLineStyle.Medium);
 
                sSheet.Auto_fit(0, 15, SheetNumber);
-               sSheet.Set_Column_Width("A", 33.57, "DATA FOR PRESENTATION");
-               sSheet.Set_Column_Width("I", 33.57, "DATA FOR PRESENTATION");
+               sSheet.Set_Column_Width("A", 33.57, "1.TOP 15");
+               sSheet.Set_Column_Width("I", 33.57, "1.TOP 15");
 
                /**************************************************************************************************************************
                * SALES V BUDGET
@@ -502,6 +662,7 @@ namespace BudgetExcelSheets
                SheetNumber++;
                RowNumber = 0;
                sSheet.Insert_Worksheet("SALES V BUDGET", SheetNumber);
+               SalesvBudget = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 0, "CUSTOMER", SheetNumber, SpreadsheetHorizontalAlignment.Left);
                sSheet.Set_Bold("A" + (RowNumber + 1), true, SheetNumber);
@@ -538,31 +699,31 @@ namespace BudgetExcelSheets
                List<string> notinBudgetList = new List<string>();
                foreach (DataRow Row in YTDSales.Rows)
                {
-                  BudgetModel currentRow = BudgetList.Where(w => w.ExistingCustomers == Classes.Global.ConvertToString(Row["Name"])).FirstOrDefault();
-                  if (currentRow != null)
-                  {
-                     if (currentRow.Section != "NEW BUSINESS IN " + Year)
+                     BudgetModel currentRow = BudgetList.Where(w => w.ExistingCustomers == Classes.Global.ConvertToString(Row["Name"])).FirstOrDefault();
+                     if (currentRow != null)
                      {
-                        if (currentRow.ExistingCustomers != "")
+                        if (currentRow.Section != "NEW BUSINESS IN " + Year)
                         {
-                           sSheet.Set_Cell(RowNumber, 0, Row["Name"], SheetNumber);
-                           sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
-                           sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + (MonthColumnIndex) + ",FALSE), 0)", SheetNumber, "£ #,##0");
-                           sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
-                           sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O,14,FALSE), 0)", SheetNumber, "£ #,##0");
-                           sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
-                           sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
-                           sSheet.Set_Formula(RowNumber, 8, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
-                           sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
+                           if (currentRow.ExistingCustomers != "")
+                           {
+                              sSheet.Set_Cell(RowNumber, 0, Row["Name"], SheetNumber);
+                              sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
+                              sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + (MonthColumnIndex) + ",FALSE), 0)", SheetNumber, "£ #,##0");
+                              sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
+                              sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O,14,FALSE), 0)", SheetNumber, "£ #,##0");
+                              sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
+                              sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
+                              sSheet.Set_Formula(RowNumber, 8, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
+                              sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
 
-                           RowNumber++;
+                              RowNumber++;
+                           }
                         }
+                        else
+                           newBusinessList.Add(currentRow.ExistingCustomers);
                      }
                      else
-                        newBusinessList.Add(currentRow.ExistingCustomers);
-                  }
-                  else
-                     notinBudgetList.Add(Classes.Global.ConvertToString(Row["Name"]));
+                        notinBudgetList.Add(Classes.Global.ConvertToString(Row["Name"]));
                }
 
                RowNumber += 2;
@@ -623,20 +784,24 @@ namespace BudgetExcelSheets
 
                foreach (string noBudget in notinBudgetList)
                {
-                  DataRow[] noBudgetRows = YTDSales.Select("Name = '" + noBudget + "'");
-                  if (noBudgetRows.Length > 0)
+                  bool Outdated = OutdatedList.Contains(Classes.Global.ConvertToString(noBudget).Trim());
+                  if (!Outdated)
                   {
-                     sSheet.Set_Cell(RowNumber, 0, noBudgetRows[0]["Name"], SheetNumber);
-                     sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + (MonthColumnIndex) + ",FALSE), 0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O,14,FALSE), 0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
-                     sSheet.Set_Formula(RowNumber, 8, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
+                     DataRow[] noBudgetRows = YTDSales.Select("Name = '" + noBudget + "'");
+                     if (noBudgetRows.Length > 0)
+                     {
+                        sSheet.Set_Cell(RowNumber, 0, noBudgetRows[0]["Name"], SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + (MonthColumnIndex) + ",FALSE), 0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,3,FALSE), 0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O,14,FALSE), 0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
+                        sSheet.Set_Formula(RowNumber, 8, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,4,FALSE), 0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'YTD SALES'!A:O,6,FALSE), 0)", SheetNumber, "#,##0.0");
 
-                     RowNumber++;
+                        RowNumber++;
+                     }
                   }
                }
 
@@ -701,20 +866,20 @@ namespace BudgetExcelSheets
                SheetNumber++;
                EndDate = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddMonths(1).AddSeconds(-1).ToString("yyyy-MM-dd");
                MonthSalesPerCustomerSheets(sSheet, SheetNumber, Year, EndDate, LightGreen);
-
+               ThisYearMonthSalesPerCustomer = SheetNumber;
                int ThisYearRowCount = sSheet.GetWorksheetRange(Year + " MONTH SALES PER CUSTOMER").RowCount;
 
                SheetNumber++;
                EndDate = LastYear + "-12-31";
                MonthSalesPerCustomerSheets(sSheet, SheetNumber, LastYear, EndDate, LightGreen, MonthNo);
-
+               LastYearMonthSalesPerCustomer = SheetNumber;
                int LastYearRowCount = sSheet.GetWorksheetRange(LastYear + " MONTH SALES PER CUSTOMER").RowCount;
 
                SheetNumber++;
                LastYear = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-2).ToString("yyyy");
                EndDate = LastYear + "-12-31";
                MonthSalesPerCustomerSheets(sSheet, SheetNumber, LastYear, EndDate, LightGreen);
-
+               PriorYearMonthSalesPerCustomer = SheetNumber;
                int Last2YearRowCount = sSheet.GetWorksheetRange(LastYear + " MONTH SALES PER CUSTOMER").RowCount;
 
                // Resetting afterwards
@@ -729,8 +894,8 @@ namespace BudgetExcelSheets
 
                SheetNumber++;
 
-               sSheet.Insert_Worksheet("NEW B V BUDGET", SheetNumber);
-
+               sSheet.Insert_Worksheet("2.NEW B V BUDGET", SheetNumber);
+               NewBvBudget = SheetNumber;
                RowNumber = 0;
 
                List<string> NameList = new List<string>();
@@ -1324,21 +1489,21 @@ namespace BudgetExcelSheets
                    "B" + (NewBusinessFYStart + 3) + ":C" + (NewBusinessFYStart + 3), "A" + (NewBusinessFYStart + 3), "A" + (NewBusinessFYStart + 3), null, null, null, false, false, true);
 
 
-               sSheet.Set_Column_Width(0, 41.57, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(1, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(2, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(3, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(4, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(5, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(6, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(7, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(8, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(9, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(10, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(11, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(12, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(13, 10.86, "NEW B V BUDGET");
-               sSheet.Set_Column_Width(14, 10.86, "NEW B V BUDGET");
+               sSheet.Set_Column_Width(0, 41.57, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(1, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(2, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(3, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(4, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(5, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(6, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(7, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(8, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(9, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(10, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(11, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(12, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(13, 10.86, "2.NEW B V BUDGET");
+               sSheet.Set_Column_Width(14, 10.86, "2.NEW B V BUDGET");
 
                /**************************************************************************************************************************
                * SALES V PRIOR YEARS
@@ -1347,7 +1512,8 @@ namespace BudgetExcelSheets
                RowNumber = 0;
                SheetNumber++;
 
-               sSheet.Insert_Worksheet("SALES V PRIOR YEARS", SheetNumber);
+               sSheet.Insert_Worksheet("3.SALES V PRIOR YEARS", SheetNumber);
+               TotalSalesvPriorYears = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 0, LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Right);
                sSheet.Set_Cell(RowNumber, 1, "JANUARY", SheetNumber, SpreadsheetHorizontalAlignment.Left);
@@ -1710,20 +1876,78 @@ namespace BudgetExcelSheets
                    "B" + (SalesThisYearRow + 2) + ":M" + (SalesThisYearRow + 2), "A" + (SalesThisYearRow + 2), "B1:M1", null, null, null, true);
 
                sSheet.Set_Bold_Range("A1:A50", true, SheetNumber);
-               sSheet.Set_Column_Width(0, 18.29, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(1, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(2, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(3, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(4, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(5, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(6, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(7, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(8, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(9, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(10, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(11, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(12, 12, "SALES V PRIOR YEARS");
-               sSheet.Set_Column_Width(13, 12, "SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(0, 18.29, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(1, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(2, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(3, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(4, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(5, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(6, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(7, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(8, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(9, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(10, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(11, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(12, 12, "3.SALES V PRIOR YEARS");
+               sSheet.Set_Column_Width(13, 12, "3.SALES V PRIOR YEARS");
+
+               /**************************************************************************************************************************
+               * CUSTOMERS NOT BOUGHT THIS MONTH
+               *************************************************************************************************************************/
+
+               SheetNumber++;
+
+               sSheet.Insert_Worksheet("CUSTOMERS NOT BOUGHT THIS MONTH", SheetNumber);
+               CustomersNotBoughtThisMonth = SheetNumber;
+
+               RowNumber = 0;
+
+               sSheet.Set_Cell(RowNumber, 1, "CUSTOMER NAME", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 3, "YELLOW = OUTDATED", SheetNumber);
+
+               RowNumber++;
+
+               DataTable NotBoughtthisMonth = new DataTable();
+
+               for (int i = 3; i < ThisYearRowCount; i++)
+               {
+                  var Value = sSheet.Get_Cell_Text((i - 1), (((MonthColumnIndex - 1) * 3) - 2), Year + " MONTH SALES PER CUSTOMER");
+                  if (Value == null || Value == "")
+                  {
+                     var Name = sSheet.Get_Cell_Text((i - 1), 0, Year + " MONTH SALES PER CUSTOMER");
+                     if (Name != null && Name != "")
+                     {
+                        sqlstring = "SELECT tbl_Invoice.Invoice_Date " +
+                        "FROM tbl_Customer INNER JOIN " +
+                         "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
+                        "WHERE(tbl_Invoice.Invoice_Date BETWEEN '" + LastYearStartDate + "' AND '" + EndDate + "') AND(tbl_Customer.Name = N'" + Name + "') " +
+                        "ORDER BY tbl_Invoice.Invoice_Date ";
+
+                        NotBoughtthisMonth = Invoices.RetrieveDataTable(sqlstring);
+
+                        if (NotBoughtthisMonth.Rows.Count == 0)
+                        {
+                           sSheet.Set_Formula(RowNumber, 1, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
+                           sSheet.Set_FontColour("B" + (RowNumber + 1), Color.Yellow, null, SheetNumber);
+                           RowNumber++;
+
+                           OutdatedList.Add(Name);
+                        }
+                        else
+                        {
+                           sSheet.Set_Formula(RowNumber, 1, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
+                           RowNumber++;
+                        }
+                     }
+                  }
+               }
+
+               sSheet.Set_AllBorders("B1:B" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_Bold_Range("B1:D1", true, SheetNumber);
+               sSheet.Set_FontColour("B1", Color.LightGray, Color.Black, SheetNumber);
+               sSheet.Set_Column_Width(1, 41.57, "CUSTOMERS NOT BOUGHT THIS MONTH");
+               sSheet.Set_Column_Width(3, 41.57, "CUSTOMERS NOT BOUGHT THIS MONTH");
 
                /**************************************************************************************************************************
                * THIS YR V LAST YR
@@ -1733,7 +1957,8 @@ namespace BudgetExcelSheets
                SheetNumber++;
                RowNumber = 0;
 
-               sSheet.Insert_Worksheet("THIS YR V LAST YR", SheetNumber);
+               sSheet.Insert_Worksheet("4.CUSTOMER £ v BDG v PY", SheetNumber);
+               ThisYearvsLastYear = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 1, "JAN", SheetNumber);
                sSheet.Set_Cell(RowNumber, 6, "FEB", SheetNumber);
@@ -1783,48 +2008,56 @@ namespace BudgetExcelSheets
 
                foreach (DataRow row in YTDSales.Rows)
                {
-                  if (Classes.Global.ConvertToString(row["Name"]) != "")
+                  bool Outdated = OutdatedList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  bool inBudget = BudgetNameList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  if (!Outdated || inBudget)
                   {
-                     sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
-                     int LookupValueCurrentMonth = 2;
-                     int LookupValueBudget = 2;
-                     for (int i = 1; i < 61; i += 5)
+                     if (Classes.Global.ConvertToString(row["Name"]) != "")
                      {
-                        sSheet.Set_Formula(RowNumber, i, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AK," + LookupValueCurrentMonth + ",FALSE),0)", SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, i + 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AK," + LookupValueCurrentMonth + ",FALSE),0)", SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, i + 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AK," + LookupValueBudget + ",FALSE),0)", SheetNumber, "£ #,##0.00");
-                        sSheet.Set_Formula(RowNumber, i + 3, "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1) + ")/" + sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
-                        sSheet.Set_Formula(RowNumber, i + 4, "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + ")/" + sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+                        if (Classes.Global.ConvertToString(row["Name"]) != "STANNAH STAIRLIFT EURO ACCOUNT")
+                        {
+                           sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
+                           int LookupValueCurrentMonth = 2;
+                           int LookupValueBudget = 2;
+                           for (int i = 1; i < 61; i += 5)
+                           {
+                              sSheet.Set_Formula(RowNumber, i, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AK," + LookupValueCurrentMonth + ",FALSE),0)", SheetNumber, "£ #,##0.00");
+                              sSheet.Set_Formula(RowNumber, i + 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AK," + LookupValueCurrentMonth + ",FALSE),0)", SheetNumber, "£ #,##0.00");
+                              sSheet.Set_Formula(RowNumber, i + 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AK," + LookupValueBudget + ",FALSE),0)", SheetNumber, "£ #,##0.00");
+                              sSheet.Set_Formula(RowNumber, i + 3, "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1) + ")/" + sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+                              sSheet.Set_Formula(RowNumber, i + 4, "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + ")/" + sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
 
-                        sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1), Pink, null, SheetNumber);
-                        sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1), LightGreen, null, SheetNumber);
-                        sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1), Color.Lavender, null, SheetNumber);
+                              sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1), Pink, null, SheetNumber);
+                              sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1), LightGreen, null, SheetNumber);
+                              sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1), Color.Lavender, null, SheetNumber);
 
-                        LookupValueBudget++;
-                        LookupValueCurrentMonth += 3;
+                              LookupValueBudget++;
+                              LookupValueCurrentMonth += 3;
+                           }
+
+                           string Sum = "";
+                           for (int i = 2; i < ((MonthColumnIndex - 1) * 5); i += 5)
+                              Sum += sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "+";
+                           string Sum2024 = Sum.TrimEnd('+');
+
+                           Sum = "";
+                           for (int i = 1; i < ((MonthColumnIndex - 1) * 5); i += 5)
+                              Sum += sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "+";
+                           string Sum2023 = Sum.TrimEnd('+');
+                           Sum = "";
+                           for (int i = 3; i < ((MonthColumnIndex - 1) * 5); i += 5)
+                              Sum += sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "+";
+                           string Budget2024 = Sum.TrimEnd('+');
+
+                           sSheet.Set_Formula(RowNumber, 61, "=" + Sum2024, SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 62, "=" + Sum2023, SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 63, "=" + Budget2024, SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 64, "=" + sSheet.GetExcelColumnName(62) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(63) + (RowNumber + 1), SheetNumber, "£ #,##0.00");
+                           sSheet.Set_Formula(RowNumber, 65, "=" + sSheet.GetExcelColumnName(62) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(64) + (RowNumber + 1), SheetNumber, "£ #,##0.00");
+
+                           RowNumber++;
+                        }
                      }
-
-                     string Sum = "";
-                     for (int i = 2; i < ((MonthColumnIndex - 1) * 5); i += 5)
-                        Sum += sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "+";
-                     string Sum2024 = Sum.TrimEnd('+');
-
-                     Sum = "";
-                     for (int i = 1; i < ((MonthColumnIndex - 1) * 5); i += 5)
-                        Sum += sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "+";
-                     string Sum2023 = Sum.TrimEnd('+');
-                     Sum = "";
-                     for (int i = 3; i < ((MonthColumnIndex - 1) * 5); i += 5)
-                        Sum += sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + "+";
-                     string Budget2024 = Sum.TrimEnd('+');
-
-                     sSheet.Set_Formula(RowNumber, 61, "=" + Sum2024, SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 62, "=" + Sum2023, SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 63, "=" + Budget2024, SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 64, "=" + sSheet.GetExcelColumnName(62) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(63) + (RowNumber + 1), SheetNumber, "£ #,##0.00");
-                     sSheet.Set_Formula(RowNumber, 65, "=" + sSheet.GetExcelColumnName(62) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(64) + (RowNumber + 1), SheetNumber, "£ #,##0.00");
-
-                     RowNumber++;
                   }
                }
 
@@ -1840,8 +2073,8 @@ namespace BudgetExcelSheets
                   sSheet.Set_Formula(RowNumber, i, "=SUM(" + sSheet.GetExcelColumnName(i + 1) + "3:" + sSheet.GetExcelColumnName(i + 1) + (RowNumber) + ")", SheetNumber, "£ #,##0");
                   sSheet.Set_Formula(RowNumber, (i + 1), "=SUM(" + sSheet.GetExcelColumnName(i + 2) + "3:" + sSheet.GetExcelColumnName(i + 2) + (RowNumber) + ")", SheetNumber, "£ #,##0");
                   sSheet.Set_Formula(RowNumber, (i + 2), "=SUM(" + sSheet.GetExcelColumnName(i + 3) + "3:" + sSheet.GetExcelColumnName(i + 3) + (RowNumber) + ")", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, (i + 3), "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + RowNumber + "-" + sSheet.GetExcelColumnName(i + 3) + (RowNumber) + ")/" + sSheet.GetExcelColumnName(i + 3) + (RowNumber) + ",0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, (i + 4), "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + RowNumber + "-" + sSheet.GetExcelColumnName(i + 1) + (RowNumber) + ")/" + sSheet.GetExcelColumnName(i + 1) + (RowNumber) + ",0)", SheetNumber, "£ #,##0");
+                  sSheet.Set_Formula(RowNumber, (i + 3), "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(i + 3) + (RowNumber + 1) + ")/" + sSheet.GetExcelColumnName(i + 3) + (RowNumber) + ",0)", SheetNumber, "£ #,##0");
+                  sSheet.Set_Formula(RowNumber, (i + 4), "=IFERROR((" + sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1) + "-" + sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1) + ")/" + sSheet.GetExcelColumnName(i + 1) + (RowNumber) + ",0)", SheetNumber, "£ #,##0");
 
                   sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 1) + (RowNumber + 1), Pink, null, SheetNumber);
                   sSheet.Set_FontColour(sSheet.GetExcelColumnName(i + 2) + (RowNumber + 1), LightGreen, null, SheetNumber);
@@ -1863,68 +2096,14 @@ namespace BudgetExcelSheets
                sSheet.FreezePlanes(1, 0, SheetNumber);
                int StartIndex = ((MonthColumnIndex - 1) * 5) + 1;
 
-               sSheet.Set_Column_Width(0, 59.00, "THIS YR V LAST YR");
+               sSheet.Set_Column_Width(0, 59.00, "4.CUSTOMER £ v BDG v PY");
 
                for (int i = 1; i < 67; i++)
-                  sSheet.Set_Column_Width(i, 13.57, "THIS YR V LAST YR");
+                  sSheet.Set_Column_Width(i, 13.57, "4.CUSTOMER £ v BDG v PY");
 
                if (StartIndex < 60)
                   sSheet.Hide_Columns(StartIndex, 60, SheetNumber);
 
-               /**************************************************************************************************************************
-               * CUSTOMERS NOT BOUGHT THIS MONTH
-               *************************************************************************************************************************/
-
-               SheetNumber++;
-
-               sSheet.Insert_Worksheet("CUSTOMERS NOT BOUGHT THIS MONTH", SheetNumber);
-
-               RowNumber = 0;
-
-               sSheet.Set_Cell(RowNumber, 1, "CUSTOMER NAME", SheetNumber);
-
-               sSheet.Set_Cell(RowNumber, 3, "YELLOW = OUTDATED", SheetNumber);
-
-               RowNumber++;
-
-               DataTable NotBoughtthisMonth = new DataTable();
-
-               for (int i = 3; i < ThisYearRowCount; i++)
-               {
-                  var Value = sSheet.Get_Cell_Text((i - 1), (((MonthColumnIndex - 1) * 3) - 2), Year + " MONTH SALES PER CUSTOMER");
-                  if (Value == null || Value == "")
-                  {
-                     var Name = sSheet.Get_Cell_Text((i - 1), 0, Year + " MONTH SALES PER CUSTOMER");
-                     if (Name != null && Name != "")
-                     {
-                        sqlstring = "SELECT tbl_Invoice.Invoice_Date " +
-                        "FROM tbl_Customer INNER JOIN " +
-                         "tbl_Invoice ON tbl_Customer.CustomerID = tbl_Invoice.CustomerID " +
-                        "WHERE(tbl_Invoice.Invoice_Date BETWEEN '" + LastYearStartDate + "' AND '" + EndDate + "') AND(tbl_Customer.Name = N'" + Name + "') " +
-                        "ORDER BY tbl_Invoice.Invoice_Date ";
-
-                        NotBoughtthisMonth = Invoices.RetrieveDataTable(sqlstring);
-
-                        if (NotBoughtthisMonth.Rows.Count == 0)
-                        {
-                           sSheet.Set_Formula(RowNumber, 1, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
-                           sSheet.Set_FontColour("B" + (RowNumber + 1), Color.Yellow, null, SheetNumber);
-                           RowNumber++;
-                        }
-                        else
-                        {
-                           sSheet.Set_Formula(RowNumber, 1, "='" + Year + " MONTH SALES PER CUSTOMER'!A" + i, SheetNumber);
-                           RowNumber++;
-                        }
-                     }
-                  }
-               }
-
-               sSheet.Set_AllBorders("B1:B" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
-               sSheet.Set_Bold_Range("B1:D1", true, SheetNumber);
-               sSheet.Set_FontColour("B1", Color.LightGray, Color.Black, SheetNumber);
-               sSheet.Set_Column_Width(1, 41.57, "CUSTOMERS NOT BOUGHT THIS MONTH");
-               sSheet.Set_Column_Width(3, 41.57, "CUSTOMERS NOT BOUGHT THIS MONTH");
 
                /**************************************************************************************************************************
                * CUSTOMERS NOT PURCHASED THIS YEAR THAT PURCHASED LAST YEAR
@@ -2014,13 +2193,16 @@ namespace BudgetExcelSheets
 
                foreach (DataRow row in YTDSales.Rows)
                {
-                  if (Classes.Global.ConvertToString(row["Name"]) != "")
+                  if (Classes.Global.ConvertToString(row["Name"]) != "STANNAH STAIRLIFT EURO ACCOUNT")
                   {
-                     sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]), SheetNumber);
-                     sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3) - 1) + ",FALSE),0)", SheetNumber, "£ #,##0");
-                     sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + ((MonthColumnIndex - 1) * 3) + ",FALSE),0)", SheetNumber, "#,##0");
+                     if (Classes.Global.ConvertToString(row["Name"]) != "")
+                     {
+                        sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]), SheetNumber);
+                        sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3) - 1) + ",FALSE),0)", SheetNumber, "£ #,##0");
+                        sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + ((MonthColumnIndex - 1) * 3) + ",FALSE),0)", SheetNumber, "#,##0");
 
-                     RowNumber++;
+                        RowNumber++;
+                     }
                   }
                }
 
@@ -2098,28 +2280,31 @@ namespace BudgetExcelSheets
 
                foreach (string Name in NewNames)
                {
-                  sSheet.Set_Cell(RowNumber, 8, Name, SheetNumber);
-                  sSheet.Set_Formula(RowNumber, 0, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
-                  sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,41,FALSE),0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,42,FALSE),0)", SheetNumber, "#,##0");
-                  sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,43,FALSE),0)", SheetNumber, "£ #,##0.00");
+                  if (Name != "STANNAH STAIRLIFT EURO ACCOUNT")
+                  {
+                     sSheet.Set_Cell(RowNumber, 8, Name, SheetNumber);
+                     sSheet.Set_Formula(RowNumber, 0, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
+                     sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,41,FALSE),0)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,42,FALSE),0)", SheetNumber, "#,##0");
+                     sSheet.Set_Formula(RowNumber, 3, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:AZ,43,FALSE),0)", SheetNumber, "£ #,##0.00");
 
-                  sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
-                  sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
-                  sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
+                     sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,1,FALSE),\"\")", SheetNumber);
+                     sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,38,FALSE),0)", SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,39,FALSE),0)", SheetNumber, "#,##0");
+                     sSheet.Set_Formula(RowNumber, 7, "=IFERROR(VLOOKUP(I" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,40,FALSE),0)", SheetNumber, "£ #,##0.00");
 
 
-                  sSheet.Set_Formula(RowNumber, 9, "=G" + (RowNumber + 1) + "-C" + (RowNumber + 1), SheetNumber, "#,##0");
-                  sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+                     sSheet.Set_Formula(RowNumber, 9, "=G" + (RowNumber + 1) + "-C" + (RowNumber + 1), SheetNumber, "#,##0");
+                     sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
 
-                  sSheet.Set_Formula(RowNumber, 12, "=F" + (RowNumber + 1) + "-B" + (RowNumber + 1), SheetNumber, "£ #,##0");
-                  sSheet.Set_Formula(RowNumber, 13, "=IFERROR(M" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+                     sSheet.Set_Formula(RowNumber, 12, "=F" + (RowNumber + 1) + "-B" + (RowNumber + 1), SheetNumber, "£ #,##0");
+                     sSheet.Set_Formula(RowNumber, 13, "=IFERROR(M" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
 
-                  sSheet.Set_Formula(RowNumber, 15, "=H" + (RowNumber + 1) + "-D" + (RowNumber + 1), SheetNumber, "#,##0.00");
-                  sSheet.Set_Formula(RowNumber, 16, "=IFERROR(P" + (RowNumber + 1) + "/D" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
+                     sSheet.Set_Formula(RowNumber, 15, "=H" + (RowNumber + 1) + "-D" + (RowNumber + 1), SheetNumber, "#,##0.00");
+                     sSheet.Set_Formula(RowNumber, 16, "=IFERROR(P" + (RowNumber + 1) + "/D" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
 
-                  RowNumber++;
+                     RowNumber++;
+                  }
                }
                sSheet.Set_Cell(RowNumber, 0, "TOTAL", SheetNumber);
                sSheet.Set_Formula(RowNumber, 1, "=SUM(B3:B" + RowNumber + ")", SheetNumber, "£ #,##0");
@@ -2183,6 +2368,7 @@ namespace BudgetExcelSheets
                SheetNumber++;
 
                sSheet.Insert_Worksheet(Year + " BUDGET VS " + Year + " ACTUALS", SheetNumber);
+               CustomervBdgvPy = SheetNumber;
 
                sSheet.Set_Cell(RowNumber, 0, Year + " BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Cell(RowNumber, 1, "ANNUAL TOTAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
@@ -2227,7 +2413,6 @@ namespace BudgetExcelSheets
                   sSheet.Set_Formula(RowNumber, 9, "=IFERROR(F" + (RowNumber + 1) + "-B" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0");
                   sSheet.Set_Formula(RowNumber, 10, "=IFERROR(J" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0.0 %");
 
-
                   RowNumber++;
                }
 
@@ -2266,6 +2451,607 @@ namespace BudgetExcelSheets
                sSheet.Set_Column_Width(8, 46.43, Year + " BUDGET VS " + Year + " ACTUALS");
                sSheet.Set_Column_Width(9, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
                sSheet.Set_Column_Width(10, 11.86, Year + " BUDGET VS " + Year + " ACTUALS");
+
+               /**************************************************************************************************************************
+               * MONTH SALES £ & KG
+               *************************************************************************************************************************/
+
+               SheetNumber++;
+               RowNumber = 0;
+
+               sSheet.Insert_Worksheet("5." + Month + " SALES £&KG", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 0, Month, SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 1, Month + " BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 5, Month + " ACTUAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 9, Month + " ACTUAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 13, "YTD BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 17, "YTD ACTUAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 21, "YTD ACTUAL", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+
+               sSheet.Set_Rotation("A1", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+               sSheet.Set_Font_Size("A1", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+               sSheet.Set_Bold_Range("A1:AN1", true, SheetNumber);
+               sSheet.Merge_Cells("A1:A2", SheetNumber);
+               sSheet.Merge_Cells("B1:D1", SheetNumber);
+               sSheet.Merge_Cells("F1:H1", SheetNumber);
+               sSheet.Merge_Cells("J1:L1", SheetNumber);
+               sSheet.Merge_Cells("N1:P1", SheetNumber);
+               sSheet.Merge_Cells("R1:T1", SheetNumber);
+               sSheet.Merge_Cells("V1:X1", SheetNumber);
+               sSheet.Set_BackColour("A1:A2", LightGreen, SheetNumber);
+               sSheet.Set_BackColour("B1:D1", Color.LightGray, SheetNumber); 
+               sSheet.Set_BackColour("F1:H1", Color.LightGray, SheetNumber); 
+               sSheet.Set_BackColour("J1:L1", Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("N1:P1", Color.LightGray, SheetNumber); 
+               sSheet.Set_BackColour("R1:T1", Color.LightGray, SheetNumber); 
+               sSheet.Set_BackColour("V1:X1", Color.LightGray, SheetNumber);
+
+               RowNumber++;
+
+               for(int i = 1; i <= 21; i += 4)
+               {
+                  sSheet.Set_Cell(RowNumber, i, "VALUE", SheetNumber);
+                  sSheet.Set_Cell(RowNumber, i + 1, "WEIGHT", SheetNumber);
+                  sSheet.Set_Cell(RowNumber, i + 2, "ASP", SheetNumber);
+               }
+
+               sSheet.Set_BackColour("B2:D2", LightGreen, SheetNumber);
+               sSheet.Set_BackColour("F2:H2", LightGreen, SheetNumber);
+               sSheet.Set_BackColour("J2:L2", LightGreen, SheetNumber);
+               sSheet.Set_BackColour("N2:P2", LightGreen, SheetNumber);
+               sSheet.Set_BackColour("R2:T2", LightGreen, SheetNumber);
+               sSheet.Set_BackColour("V2:X2", LightGreen, SheetNumber);
+
+               RowNumber++;
+
+               foreach (DataRow row in YTDSales.Rows)
+               {
+                  bool Outdated = OutdatedList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  bool inBudget = BudgetNameList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  if (!Outdated || inBudget)
+                  {
+                     if (Classes.Global.ConvertToString(row["Name"]) != "STANNAH STAIRLIFT EURO ACCOUNT")
+                     {
+                        if (Classes.Global.ConvertToString(row["Name"]) != "")
+                        {
+                           sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ," + (MonthColumnIndex) + ",FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 1) + ",FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 3, "=IFERROR(B" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+                           sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3) - 1) + ",FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", '" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + ((MonthColumnIndex - 1) * 3) + ",FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 7, "=IFERROR(F" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+                           sSheet.Set_Formula(RowNumber, 9, "=IFERROR(F" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+                           sSheet.Set_Formula(RowNumber, 10, "=IFERROR(G" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+                           sSheet.Set_Formula(RowNumber, 11, "=IFERROR(H" + (RowNumber + 1) + "/D" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sSheet.Set_Formula(RowNumber, 13, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ,14,FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 14, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST WITH WEIGHT'!A:AZ,27,FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 15, "=IFERROR(N" + (RowNumber + 1) + "/O" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+                           sSheet.Set_Formula(RowNumber, 17, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,41,FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 18, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", '" + Year + " MONTH SALES PER CUSTOMER'!A:AZ,42,FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 19, "=IFERROR(R" + (RowNumber + 1) + "/S" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+                           sSheet.Set_Formula(RowNumber, 21, "=IFERROR(R" + (RowNumber + 1) + "/N" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+                           sSheet.Set_Formula(RowNumber, 22, "=IFERROR(S" + (RowNumber + 1) + "/O" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+                           sSheet.Set_Formula(RowNumber, 23, "=IFERROR(T" + (RowNumber + 1) + "/P" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           RowNumber++;
+                        }
+                     }
+                  }
+               }
+
+               sSheet.Set_Cell(RowNumber, 0, "New / OTHER", SheetNumber);
+
+               
+               sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 2) + ",FALSE),0)", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 1) + ",FALSE),0)", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 3, "=IFERROR(B" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+               RowNumber++;
+
+               sSheet.Set_Cell(RowNumber, 0, "TOTAL:", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+               sSheet.Set_Formula(RowNumber, 1, "=SUBTOTAL(109,B3:B" + (RowNumber) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(109,C3:C" + RowNumber + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 3, "=IFERROR(B" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+               sSheet.Set_Formula(RowNumber, 5, "=SUBTOTAL(109,F3:F" + (RowNumber) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 6, "=SUBTOTAL(109,G3:G" + RowNumber + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 7, "=IFERROR(F" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+               sSheet.Set_Formula(RowNumber, 9, "=IFERROR(F" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+               sSheet.Set_Formula(RowNumber, 10, "=IFERROR(G" + (RowNumber + 1) + "/C" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+               sSheet.Set_Formula(RowNumber, 11, "=IFERROR(H" + (RowNumber + 1) + "/D" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_Formula(RowNumber, 13, "=SUBTOTAL(109,N3:N" + (RowNumber) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 14, "=SUBTOTAL(109,O3:O" + RowNumber + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 15, "=IFERROR(N" + (RowNumber + 1) + "/O" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+               sSheet.Set_Formula(RowNumber, 17, "=SUBTOTAL(109,R3:R" + (RowNumber) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 18, "=SUBTOTAL(109,S3:S" + RowNumber + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 19, "=IFERROR(R" + (RowNumber + 1) + "/S" + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
+
+               sSheet.Set_Formula(RowNumber, 21, "=IFERROR(R" + (RowNumber + 1) + "/N" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+               sSheet.Set_Formula(RowNumber, 22, "=IFERROR(S" + (RowNumber + 1) + "/O" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+               sSheet.Set_Formula(RowNumber, 23, "=IFERROR(T" + (RowNumber + 1) + "/P" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_BackColour("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("F" + (RowNumber + 1) + ":H" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("J" + (RowNumber + 1) + ":L" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("N" + (RowNumber + 1) + ":P" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("R" + (RowNumber + 1) + ":T" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("V" + (RowNumber + 1) + ":X" + (RowNumber + 1), Color.LightGray, SheetNumber);
+
+               sSheet.Set_AllBorders("A1:A" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("B1:D" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("F1:H" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("J1:L" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("N1:P" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("R1:T" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("V1:X" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+
+               sSheet.Set_OutsideBorders("A1:A" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("B1:D" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("F1:H" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("J1:L" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("N1:P" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("R1:T" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("V1:X" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+
+               sSheet.Set_Column_Width(0, 46.43, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(1, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(2, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(3, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(5, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(6, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(7, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(9, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(10, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(11, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(13, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(14, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(15, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(17, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(18, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(19, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(21, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(22, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Set_Column_Width(23, 11.86, "5." + Month + " SALES £&KG");
+               sSheet.Auto_Filter("A2:X2", SheetNumber);
+
+
+               /**************************************************************************************************************************
+               * SG INTERNAL SALES
+               *************************************************************************************************************************/
+               Color LightBlue = ColorTranslator.FromHtml("#33CCCC");
+
+               SheetNumber++;
+               RowNumber = 0;
+
+               sSheet.Insert_Worksheet("6.SG INTERNAL SALES", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 1, "REVENUE", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 5, "VOLUME", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 9, "STOCK", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 13, "PURCHASES", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+
+               sSheet.Merge_Cells("B1:D1", SheetNumber);
+               sSheet.Merge_Cells("F1:H1", SheetNumber);
+               sSheet.Merge_Cells("J1:L1", SheetNumber);
+               sSheet.Merge_Cells("N1:O1", SheetNumber);
+               sSheet.Set_BackColour("B1:D2", Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("F1:H2", Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("J1:L2", Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("N1:O2", Color.LightGray, SheetNumber);
+               sSheet.Merge_Cells("A1:A2", SheetNumber);
+               sSheet.Set_Bold_Range("A1:P2", true, SheetNumber);
+               sSheet.Set_BackColour("A1:A2", LightBlue, SheetNumber);
+
+               RowNumber++;
+
+               sSheet.Set_Cell(RowNumber, 1, "BUDGET", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 2, Month + " SALES", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 3, "% OF BUDGET", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 5, "BUDGET", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 6, Month + " SALES", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 7, "% OF BUDGET", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 9, "TARGET STOCK", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 10, "STOCK KGS", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 11, "% ", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 13, "PURCHASES KGS", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 14, "% OF SALES", SheetNumber);
+
+               sSheet.Set_OutsideBorders("B" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("F" + (RowNumber + 1) + ":H" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("J" + (RowNumber + 1) + ":L" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("N" + (RowNumber + 1) + ":O" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+
+               RowNumber++;
+
+               sqlstring = "SELECT tbl_Customer.Name, SUM(View_Stock_Theoretical_Weight.Unit_Weight * View_Stock_Theoretical_Weight.Qty_Free) AS Weight, tbl_Customer.CustomerID " +
+                        "FROM tbl_Customer LEFT OUTER JOIN " +
+                        "View_Stock_Theoretical_Weight ON tbl_Customer.CustomerID = View_Stock_Theoretical_Weight.Default_Customer " +
+                        "WHERE(tbl_Customer.Deleted = 0) " +
+                        "GROUP BY tbl_Customer.Name, tbl_Customer.CustomerID " +
+                        "ORDER BY tbl_Customer.Name";
+
+               DataTable theoStockdt = Invoices.RetrieveDataTable(sqlstring);
+
+               List<TheoStockModel> TheoStockList = theoStockdt.AsEnumerable().Select(x => new TheoStockModel
+               {
+                  Name = x.Field<string>("Name"),
+                  StockKGs = x.Field<double?>("Weight"),
+                  CustomerID = x.Field<string>("CustomerID")
+
+               }).ToList();
+
+               theoStockdt.Dispose();
+               theoStockdt = null;
+
+               foreach (TheoStockModel stockModel in TheoStockList)
+               {
+                  if (stockModel.StockKGs == null)
+                     stockModel.StockKGs = 0;
+
+                  bool Outdated = OutdatedList.Contains(Classes.Global.ConvertToString(stockModel.Name).Trim());
+                  bool inBudget = BudgetNameList.Contains(Classes.Global.ConvertToString(stockModel.Name).Trim());
+                  if (!Outdated || inBudget)
+                  {
+                     bool newNoBudget = NewnoBudgetList.Contains(stockModel.Name.Trim());
+                     if (!newNoBudget)
+                     {
+                        if (stockModel.Name == "STANNAH STAIRLIFT EURO ACCOUNT")
+                        {
+                        }
+                        else if (stockModel.Name == "STANNAH STAIRLIFTS LTD")
+                        {
+                           TheoStockModel StanEuroModel = TheoStockList.Where(x => x.Name == "STANNAH STAIRLIFT EURO ACCOUNT").FirstOrDefault();
+
+                           sSheet.Set_Cell(RowNumber, 0, stockModel.Name.Trim(), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ," + (MonthColumnIndex)+ ",FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3) - 1) + ",FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 3, "=IFERROR(C" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 1) + ",FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", '" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + ((MonthColumnIndex - 1) * 3) + ",FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 7, "=IFERROR(G" + (RowNumber + 1) + "/F" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST ASP CALC'!A:AZ,5,FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Cell(RowNumber, 10, Math.Round(Classes.Global.ConvertToDouble(stockModel.StockKGs + StanEuroModel.StockKGs), 0, MidpointRounding.ToEven), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 11, "=IFERROR(K" + (RowNumber + 1) + "/J" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sqlstring = "SELECT SUM(tbl_StockPack.Qty_Original * tbl_Product.Unit_Weight_Without_Components) AS Purchases " +
+                              "FROM tbl_StockPack INNER JOIN " +
+                              "tbl_Product ON tbl_StockPack.ProductID = tbl_Product.ProductID INNER JOIN " +
+                              "tbl_PurchaseOrderItem ON tbl_StockPack.PurchaseOrderItemID = tbl_PurchaseOrderItem.PurchaseOrderItemID INNER JOIN " +
+                              "tbl_PurchaseOrder ON tbl_PurchaseOrderItem.PurchaseOrderID = tbl_PurchaseOrder.PurchaseOrderID INNER JOIN " +
+                              "tbl_Supplier ON tbl_PurchaseOrder.SupplierID = tbl_Supplier.SupplierID " +
+                              "WHERE (tbl_StockPack.OriginalPackID IS NULL) AND (tbl_Product.Default_Customer = N'" + stockModel.CustomerID + "') AND " +
+                              "(tbl_Supplier.Account_Ref = N'CORTIZO' OR tbl_Supplier.Account_Ref = N'SMARTALU' OR tbl_Supplier.Account_Ref = N'ORIGIN') AND " +
+                              "(tbl_StockPack.Pack_Date BETWEEN '" + StartDate + "' AND '" + EndDate + "')";
+
+                           DataTable pdt = Invoices.RetrieveDataTable(sqlstring);
+                           PurchasesKGsModel purchase = pdt.AsEnumerable().Select(s => new PurchasesKGsModel { PurchasesKgs = s.Field<double?>("Purchases") }).FirstOrDefault();
+
+                           if (purchase.PurchasesKgs == null)
+                              purchase.PurchasesKgs = 0;
+
+                           sqlstring = "SELECT SUM(tbl_StockPack.Qty_Original * tbl_Product.Unit_Weight_Without_Components) AS Purchases " +
+                              "FROM tbl_StockPack INNER JOIN " +
+                              "tbl_Product ON tbl_StockPack.ProductID = tbl_Product.ProductID INNER JOIN " +
+                              "tbl_PurchaseOrderItem ON tbl_StockPack.PurchaseOrderItemID = tbl_PurchaseOrderItem.PurchaseOrderItemID INNER JOIN " +
+                              "tbl_PurchaseOrder ON tbl_PurchaseOrderItem.PurchaseOrderID = tbl_PurchaseOrder.PurchaseOrderID INNER JOIN " +
+                              "tbl_Supplier ON tbl_PurchaseOrder.SupplierID = tbl_Supplier.SupplierID " +
+                              "WHERE (tbl_StockPack.OriginalPackID IS NULL) AND (tbl_Product.Default_Customer = N'" + StanEuroModel.CustomerID + "') AND " +
+                              "(tbl_Supplier.Account_Ref = N'CORTIZO' OR tbl_Supplier.Account_Ref = N'SMARTALU' OR tbl_Supplier.Account_Ref = N'ORIGIN') AND " +
+                              "(tbl_StockPack.Pack_Date BETWEEN '" + StartDate + "' AND '" + EndDate + "')";
+
+                           pdt = Invoices.RetrieveDataTable(sqlstring);
+                           PurchasesKGsModel StanEuropurchase = pdt.AsEnumerable().Select(s => new PurchasesKGsModel { PurchasesKgs = s.Field<double?>("Purchases") }).FirstOrDefault();
+
+                           if (StanEuropurchase.PurchasesKgs == null)
+                              StanEuropurchase.PurchasesKgs = 0;
+
+                           sSheet.Set_Cell(RowNumber, 13, Math.Round(Classes.Global.ConvertToDouble(purchase.PurchasesKgs + StanEuropurchase.PurchasesKgs), 0, MidpointRounding.ToEven), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 14, "=IFERROR(N" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           RowNumber++;
+                        }
+                        else
+                        {
+                           sSheet.Set_Cell(RowNumber, 0, stockModel.Name.Trim(), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AZ," + (MonthColumnIndex) + ",FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3) - 1) + ",FALSE),0)", SheetNumber, "£ #,##0");
+                           sSheet.Set_Formula(RowNumber, 3, "=IFERROR(C" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 1) + ",FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", '" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + ((MonthColumnIndex - 1) * 3) + ",FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Formula(RowNumber, 7, "=IFERROR(G" + (RowNumber + 1) + "/F" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sSheet.Set_Formula(RowNumber, 9, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ", 'FORECAST ASP CALC'!A:AZ,5,FALSE),0)", SheetNumber, "#,##0");
+                           sSheet.Set_Cell(RowNumber, 10, Math.Round(Classes.Global.ConvertToDouble(stockModel.StockKGs), 0, MidpointRounding.ToEven), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 11, "=IFERROR(K" + (RowNumber + 1) + "/J" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           sqlstring = "SELECT SUM(tbl_StockPack.Qty_Original * tbl_Product.Unit_Weight_Without_Components) AS Purchases " +
+                              "FROM tbl_StockPack INNER JOIN " +
+                              "tbl_Product ON tbl_StockPack.ProductID = tbl_Product.ProductID INNER JOIN " +
+                              "tbl_PurchaseOrderItem ON tbl_StockPack.PurchaseOrderItemID = tbl_PurchaseOrderItem.PurchaseOrderItemID INNER JOIN " +
+                              "tbl_PurchaseOrder ON tbl_PurchaseOrderItem.PurchaseOrderID = tbl_PurchaseOrder.PurchaseOrderID INNER JOIN " +
+                              "tbl_Supplier ON tbl_PurchaseOrder.SupplierID = tbl_Supplier.SupplierID " +
+                              "WHERE (tbl_StockPack.OriginalPackID IS NULL) AND (tbl_Product.Default_Customer = N'" + stockModel.CustomerID + "') AND " +
+                              "(tbl_Supplier.Account_Ref = N'CORTIZO' OR tbl_Supplier.Account_Ref = N'SMARTALU' OR tbl_Supplier.Account_Ref = N'ORIGIN') AND " +
+                              "(tbl_StockPack.Pack_Date BETWEEN '" + StartDate + "' AND '" + EndDate + "')";
+
+                           DataTable pdt = Invoices.RetrieveDataTable(sqlstring);
+                           PurchasesKGsModel purchase = pdt.AsEnumerable().Select(s => new PurchasesKGsModel { PurchasesKgs = s.Field<double?>("Purchases") }).FirstOrDefault();
+
+                           if (purchase.PurchasesKgs == null)
+                              purchase.PurchasesKgs = 0;
+
+                           sSheet.Set_Cell(RowNumber, 13, Math.Round(Classes.Global.ConvertToDouble(purchase.PurchasesKgs), 0, MidpointRounding.ToEven), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 14, "=IFERROR(N" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+                           RowNumber++;
+                        }
+                     }
+                  }
+               }
+               sSheet.Set_BackColour("A3:A" + RowNumber, Color.LightGray, SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 1, "", SheetNumber);
+               sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(109,C3:C" + (RowNumber) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Cell(RowNumber, 3, "", SheetNumber);
+
+               sSheet.Set_Formula(RowNumber, 5, "=SUBTOTAL(109,F3:F" + (RowNumber) + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 6, "=SUBTOTAL(109,G3:G" + (RowNumber) + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 7, "=IFERROR(G" + (RowNumber + 1) + "/F" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_Formula(RowNumber, 9, "=SUBTOTAL(109,J3:J" + (RowNumber) + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 10, "=SUBTOTAL(109,K3:K" + (RowNumber) + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 11, "=IFERROR(K" + (RowNumber + 1) + "/J" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_Formula(RowNumber, 13, "=SUBTOTAL(109,N3:N" + (RowNumber) + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 14, "=IFERROR(N" + (RowNumber + 1) + "/G" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_Bold_Range("B" + (RowNumber + 1) + ":O" + (RowNumber + 1), true, SheetNumber);
+               sSheet.Set_AllBorders("A1:D" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("F1:H" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("J1:L" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("N1:O" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_OutsideBorders("A1:A" + (RowNumber), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("B1:D" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("F1:H" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("J1:L" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("N1:O" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+
+               sSheet.Set_OutsideBorders("B" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("F" + (RowNumber + 1) + ":H" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("J" + (RowNumber + 1) + ":L" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("N" + (RowNumber + 1) + ":O" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+
+               RowNumber +=2;
+
+               sSheet.Set_BackColour("A" + (RowNumber - 1) + ":A" + (RowNumber + 1), LightBlue, SheetNumber);
+               sSheet.Set_BackColour("B" + (RowNumber - 1) + ":D" + (RowNumber - 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("F" + (RowNumber - 1) + ":H" + (RowNumber - 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("J" + (RowNumber - 1) + ":L" + (RowNumber - 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("N" + (RowNumber - 1) + ":O" + (RowNumber - 1), Color.LightGray, SheetNumber);
+
+               sSheet.Set_BackColour("B" + (RowNumber) + ":O" + (RowNumber), LightBlue, SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 0, "New / OTHER", SheetNumber);
+               sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 2) + ",FALSE),0)", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(109,C" + (RowNumber + 2) + ":C" + (RowNumber + 1 + NewnoBudgetList.Count) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 3, "=IFERROR(C" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+               sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 1) + ",FALSE),0)", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 6, "=SUBTOTAL(109,G" + (RowNumber + 2) + ":G" + (RowNumber + 1 + NewnoBudgetList.Count) + ")", SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 7, "=IFERROR(G" + (RowNumber + 1) + "/F" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+               sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":H" + (RowNumber + 1), true, SheetNumber);
+               int NewOtherRow = RowNumber;
+               RowNumber++;
+               foreach(string Name in NewnoBudgetList.OrderBy(o => o))
+               {
+                  sSheet.Set_Cell(RowNumber, 0, Name, SheetNumber);
+                  sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3) - 1) + ",FALSE),0)", SheetNumber, "£ #,##0");
+
+                  sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'FORECAST WITH WEIGHT'!A:AZ," + (((MonthColumnIndex) + (MonthColumnIndex)) - 1) + ",FALSE),0)", SheetNumber, "#,##0");
+                  sSheet.Set_Formula(RowNumber, 6, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:AZ," + (((MonthColumnIndex - 1) * 3)) + ",FALSE),0)", SheetNumber, "#,##0");
+
+                  RowNumber++;
+               }
+               sSheet.Set_BackColour("A" + (NewOtherRow + 1) +":A" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_AllBorders("A" + (NewOtherRow + 1) + ":D" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("F" + (NewOtherRow + 1) + ":H" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_OutsideBorders("A" + (NewOtherRow + 1) + ":A" + (RowNumber), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("B" + (NewOtherRow + 1) + ":D" + (RowNumber), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("F" + (NewOtherRow + 1) + ":H" + (RowNumber), Color.Black, SheetNumber, BorderLineStyle.Medium);
+
+               RowNumber++;
+
+               sSheet.Set_BackColour("A" + RowNumber, LightBlue, SheetNumber);
+               sSheet.Set_BackColour("B" + (RowNumber) + ":O" + (RowNumber), LightBlue, SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 0, "TOTAL", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+               sSheet.Set_Formula(RowNumber, 1, "=SUBTOTAL(109,B3:B" + (RowNumber) + ")", SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 2, "=C" + (NewOtherRow - 1) + "+C" + (NewOtherRow + 1), SheetNumber, "£ #,##0");
+               sSheet.Set_Formula(RowNumber, 3, "=IFERROR(C" + (RowNumber + 1) + "/B" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_Formula(RowNumber, 5, "=F" + (NewOtherRow - 1) + "+F" + (NewOtherRow + 1), SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 6, "=G" + (NewOtherRow - 1) + "+G" + (NewOtherRow + 1), SheetNumber, "#,##0");
+               sSheet.Set_Formula(RowNumber, 7, "=IFERROR(G" + (RowNumber + 1) + "/F" + (RowNumber + 1) + ",0)", SheetNumber, "% #,##0");
+
+               sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":H" + (RowNumber + 1), true, SheetNumber);
+               sSheet.Set_BackColour("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.LightGray, SheetNumber);
+               sSheet.Set_BackColour("F" + (RowNumber + 1) + ":H" + (RowNumber + 1), Color.LightGray, SheetNumber);
+
+               sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("F" + (RowNumber + 1) + ":H" + (RowNumber + 1), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_OutsideBorders("A" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("B" + (RowNumber + 1) + ":D" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("F" + (RowNumber + 1) + ":H" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
+
+               sSheet.Set_BackColour("J" + (NewOtherRow + 1) + ":O" + (RowNumber + 1), LightBlue, SheetNumber);
+
+
+               sSheet.Set_BackColour("E1:E" + (RowNumber + 1), LightBlue, SheetNumber);
+               sSheet.Set_BackColour("I1:I" + (RowNumber + 1), LightBlue, SheetNumber);
+               sSheet.Set_BackColour("M1:M" + (RowNumber + 1), LightBlue, SheetNumber);
+               sSheet.Set_BackColour("P1:P" + (RowNumber + 1), LightBlue, SheetNumber);
+
+               sSheet.Set_Font_Size("A1:O" + (RowNumber + 1), 12, SheetNumber);
+               sSheet.Auto_fit(1, 16, SheetNumber);
+               sSheet.Auto_Filter("A2:O2", SheetNumber);
+
+               sSheet.Set_Conditional_Formatting("D3: D" + (NewOtherRow - 2), ConditionalFormattingExpressionCondition.GreaterThan, "0.99", Color.PaleGreen, Color.Green, SheetNumber);
+               sSheet.Set_Conditional_Formatting("H3: H" + (NewOtherRow - 2), ConditionalFormattingExpressionCondition.GreaterThan, "0.99", Color.PaleGreen, Color.Green, SheetNumber);
+               sSheet.Set_Conditional_Formatting("L3: L" + (NewOtherRow - 2), ConditionalFormattingExpressionCondition.GreaterThan, "1.49", Color.MistyRose, Color.Red, SheetNumber);
+               sSheet.Set_Conditional_Formatting("O3: O" + (NewOtherRow - 2), ConditionalFormattingExpressionCondition.GreaterThan, "1.49", Color.MistyRose, Color.Red, SheetNumber);
+
+               /**************************************************************************************************************************
+               * YTD LOWER THAN BUDGET
+               *************************************************************************************************************************/
+
+               SheetNumber++;
+               RowNumber = 0;
+
+               sSheet.Insert_Worksheet("YTD BELOW BUDGET", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 1, "TOTALS", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Merge_Cells("B1:D1", SheetNumber);
+
+               RowNumber++;
+
+               sSheet.Set_Cell(RowNumber, 0, "THIS YR V BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Rotation("A2", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+               sSheet.Set_Font_Size("A2", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+               sSheet.Merge_Cells("A1:A2", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 1, Year + " YTD", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 2, "BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 3, "VAR AGAINST BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+
+               sSheet.Set_FontColour("A1:A2", LightGreen, Color.Black, SheetNumber);
+               sSheet.Set_FontColour("B1:D2", Color.LightGray, Color.Black, SheetNumber);
+
+               sSheet.Set_Bold_Range("A1:D2", true, SheetNumber);
+
+               RowNumber++;
+
+               foreach (DataRow row in YTDSales.Rows)
+               {
+                  bool Outdated = OutdatedList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  bool inBudget = BudgetNameList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  if (!Outdated || inBudget)
+                  {
+                     if (Classes.Global.ConvertToString(row["Name"]) != "")
+                     {
+                        if (Classes.Global.ConvertToString(row["Name"]) != "STANNAH STAIRLIFT EURO ACCOUNT")
+                        {
+                           sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:BZ,38,FALSE),0)", SheetNumber, "£ #,##0.00");
+                           sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AK,14,FALSE),0)", SheetNumber, "£ #,##0.00");
+                           sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+
+                           double YTDValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), Year + " MONTH SALES PER CUSTOMER"), 37, Year + " MONTH SALES PER CUSTOMER").ToString().Replace("£", ""));
+                           double BudgetValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), Year + " BUDGET"), 13, Year + " BUDGET").ToString().Replace("£", ""));
+
+                           if(YTDValue < BudgetValue)
+                              RowNumber++;
+                        }
+                     }
+                  }
+               }
+
+               sSheet.Set_Cell(RowNumber, 0, "TOTAL:", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+               sSheet.Set_Formula(RowNumber, 1, "=SUBTOTAL(9, B3:B" + RowNumber + ")", SheetNumber, "£ #,##0.00");
+               sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(9, C3:C" + RowNumber + ")", SheetNumber, "£ #,##0.00");
+               sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+
+               sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), true, SheetNumber);
+
+               RowNumber++;
+
+               sSheet.Set_AllBorders("A1:D" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_OutsideBorders("A1", Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("B1:C2", Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_Font_Size("A1:C" + (RowNumber + 1), 12, SheetNumber);
+               sSheet.Auto_fit(0, 2, SheetNumber);
+
+               /**************************************************************************************************************************
+               * YTD LOWER THAN LAST YEAR
+               *************************************************************************************************************************/
+
+               SheetNumber++;
+               RowNumber = 0;
+
+               sSheet.Insert_Worksheet("YTD BELOW LAST YEAR", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 1, "TOTALS", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Merge_Cells("B1:D1", SheetNumber);
+
+               RowNumber++;
+
+               sSheet.Set_Cell(RowNumber, 0, "THIS YR V LAST YR", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Rotation("A2", SheetNumber, 0, SpreadsheetVerticalAlignment.Center);
+               sSheet.Set_Font_Size("A2", 20, SpreadsheetHorizontalAlignment.Center, SheetNumber);
+               sSheet.Merge_Cells("A1:A2", SheetNumber);
+
+               sSheet.Set_Cell(RowNumber, 1, Year + " YTD", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 2, LastYear + " YTD", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 3, "VAR AGAINST " + LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Center);
+
+               sSheet.Set_FontColour("A1:A2", LightGreen, Color.Black, SheetNumber);
+               sSheet.Set_FontColour("B1:D2", Color.LightGray, Color.Black, SheetNumber);
+
+               sSheet.Set_Bold_Range("A1:D2", true, SheetNumber);
+
+               RowNumber++;
+
+               foreach (DataRow row in YTDSales.Rows)
+               {
+                  bool Outdated = OutdatedList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  bool inBudget = BudgetNameList.Contains(Classes.Global.ConvertToString(row["Name"]).Trim());
+                  if (!Outdated || inBudget)
+                  {
+                     if (Classes.Global.ConvertToString(row["Name"]) != "")
+                     {
+                        if (Classes.Global.ConvertToString(row["Name"]) != "STANNAH STAIRLIFT EURO ACCOUNT")
+                        {
+                           sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(row["Name"]).Trim(), SheetNumber);
+                           sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:BZ,38,FALSE),0)", SheetNumber, "£ #,##0.00");
+                           sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:BZ,41,FALSE),0)", SheetNumber, "£ #,##0.00");
+                           sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+
+                           double YTDValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), Year + " MONTH SALES PER CUSTOMER"), 37, Year + " MONTH SALES PER CUSTOMER").ToString().Replace("£", ""));
+                           double LastYTDValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), LastYear + " MONTH SALES PER CUSTOMER"), 40, LastYear + " MONTH SALES PER CUSTOMER").ToString().Replace("£", ""));
+
+                           if (YTDValue < LastYTDValue)
+                              RowNumber++;
+                        }
+                     }
+                  }
+               }
+
+               sSheet.Set_Cell(RowNumber, 0, "TOTAL:", SheetNumber, SpreadsheetHorizontalAlignment.Right);
+               sSheet.Set_Formula(RowNumber, 1, "=SUBTOTAL(9, B3:B" + RowNumber + ")", SheetNumber, "£ #,##0.00");
+               sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(9, C3:C" + RowNumber + ")", SheetNumber, "£ #,##0.00");
+               sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+
+               sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), true, SheetNumber);
+
+               RowNumber++;
+
+               sSheet.Set_AllBorders("A1:D" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_OutsideBorders("A1", Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_OutsideBorders("B1:D2", Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_Font_Size("A1:D" + (RowNumber + 1), 12, SheetNumber);
+               sSheet.Auto_fit(0, 2, SheetNumber);
+
             }
             catch (Exception ex)
             {
@@ -2277,21 +3063,51 @@ namespace BudgetExcelSheets
               * CHANGE SHEET ORDER
               *************************************************************************************************************************/
                string Year = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("yyyy");
+               string LastYear = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-1).ToString("yyyy");
+               string PriorYear = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).AddYears(-2).ToString("yyyy");
+               string Month = Classes.Global.ConvertToDateTime(dteReportDate.EditValue).ToString("MMMM").ToUpper();
 
-               sSheet.Change_Worksheet_Order("DATA FOR PRESENTATION", 0);
-               sSheet.Change_Worksheet_Order(Year + " BUDGET", 1);
-               sSheet.Change_Worksheet_Order("NEW BUSINESS NO BUDGET", 2);
-               sSheet.Change_Worksheet_Order("SALES V BUDGET", 3);
-               //sSheet.Change_Worksheet_Order("THIS YEAR NEW BUSINESS", 4);
-               sSheet.Change_Worksheet_Order("NEW B V BUDGET", 4);
-               sSheet.Change_Worksheet_Order("SALES V PRIOR YEARS", 5);
-               sSheet.Change_Worksheet_Order("THIS YR V LAST YR", 6);
-               sSheet.Change_Worksheet_Order("CUSTOMERS NOT BOUGHT THIS MONTH", 7);
-               //sSheet.Change_Worksheet_Order("THIS YR VS LAST YR SALES VAR", 8);
-               //sSheet.Change_Worksheet_Order("THIS YR BUDGET VS THIS YR ACTUAL", 8);
-               //sSheet.Change_Worksheet_Order("CURRENT MONTH TURNOVER SUMMARY", 9);
-               //sSheet.Change_Worksheet_Order("YTD SALES", 10);
-               
+               sSheet.Change_Worksheet_Order("1.TOP 15", 0);
+               sSheet.Change_Worksheet_Order("2.NEW B V BUDGET", 1);
+               sSheet.Change_Worksheet_Order("3.SALES V PRIOR YEARS", 2);
+               sSheet.Change_Worksheet_Order("4.CUSTOMER £ v BDG v PY", 3);
+               sSheet.Change_Worksheet_Order("5." + Month + " SALES £&KG", 4);
+               sSheet.Change_Worksheet_Order("6.SG INTERNAL SALES", 5);
+               sSheet.Change_Worksheet_Order(Year + " MONTH SALES PER CUSTOMER", 6);
+               sSheet.Change_Worksheet_Order(Year + " BUDGET", 7);
+               sSheet.Change_Worksheet_Order("FORECAST WITH WEIGHT", 8);
+               sSheet.Change_Worksheet_Order("YTD BELOW BUDGET", 9);
+               sSheet.Change_Worksheet_Order("YTD BELOW LAST YEAR", 10);
+               sSheet.Change_Worksheet_Order("SALES V BUDGET", 11);
+               sSheet.Change_Worksheet_Order("YTD SALES", 12);
+               sSheet.Change_Worksheet_Order("CURRENT MONTH TURNOVER SUMMARY", 13);
+               sSheet.Change_Worksheet_Order(LastYear + " MONTH SALES PER CUSTOMER", 14);
+               sSheet.Change_Worksheet_Order(PriorYear + " MONTH SALES PER CUSTOMER", 15);
+               sSheet.Change_Worksheet_Order(LastYear + " BUDGET", 16);
+               sSheet.Change_Worksheet_Order(PriorYear + " BUDGET", 17);
+
+               sSheet.Change_Worksheet_Colour(0, LightGreen);
+               sSheet.Change_Worksheet_Colour(1, LightGreen);
+               sSheet.Change_Worksheet_Colour(2, LightGreen);
+               sSheet.Change_Worksheet_Colour(3, LightGreen);
+               sSheet.Change_Worksheet_Colour(4, LightGreen);
+               sSheet.Change_Worksheet_Colour(5, LightGreen);
+               sSheet.Change_Worksheet_Colour(6, LightGreen);
+               sSheet.Change_Worksheet_Colour(7, Color.LightBlue);
+               sSheet.Change_Worksheet_Colour(8, Color.LightBlue);
+               sSheet.Change_Worksheet_Colour(9, Color.LightBlue);
+               sSheet.Change_Worksheet_Colour(10, Color.LightBlue);
+               sSheet.Change_Worksheet_Colour(11, Color.LightGreen);
+               sSheet.Change_Worksheet_Colour(12, Color.LightGreen);
+               sSheet.Change_Worksheet_Colour(13, Color.LightGreen);
+               sSheet.Change_Worksheet_Colour(14, Color.Red);
+               sSheet.Change_Worksheet_Colour(15, Color.Red);
+               sSheet.Change_Worksheet_Colour(16, Color.Red);
+               sSheet.Change_Worksheet_Colour(17, Color.Red);
+
+               for(int i = 18; i < sSheet.Get_Sheet_Count(); i ++)
+                  sSheet.Change_Worksheet_Colour(i, Color.Gold);
+
 
                /**************************************************************************************************************************
                * FINAL BITS AND SAVING
@@ -2312,6 +3128,9 @@ namespace BudgetExcelSheets
                      sSheet.SaveToFile(saveDialog.FileName, DXTools.Spreadsheet.FormatTypes.Xlsx);
                      System.Diagnostics.Process.Start(saveDialog.FileName);
                   }
+
+                  //new SupportMail().Send("Please find the attached Daily Snapshot for " + DateToRun.ToString("yyyy-MM-dd"), "Daily Snapshot Report", cFig.cValue, new List<Stream>() { sSheet.Export_To_Stream(DXTools.Spreadsheet.FormatTypes.Xlsx) }, "Daily Snapshot " + DateToRun.ToString("yyyy-MM-dd") + ".xlsx");
+
                }
             }
          }
@@ -2333,7 +3152,7 @@ namespace BudgetExcelSheets
             string sqlstring = "SELECT tbl_Customer.CustomerID, tbl_Customer.Account_Ref, LTRIM(RTRIM(tbl_Customer.Name)) AS Name, Inv.Line_Cost_Price, " +
                     "Inv.Line_Sale_Price, Inv.Line_Unit_Weight, Inv.Invoice_Month, tbl_Customer.Deleted " +
                     "FROM tbl_Customer LEFT OUTER JOIN(SELECT SUM(tbl_InvoiceItem.Cost_Price* tbl_InvoiceItem.Qty_Order) AS Line_Cost_Price, SUM(tbl_InvoiceItem.Net_Amount) AS Line_Sale_Price, " +
-                    "SUM(tbl_Product.Unit_Weight * tbl_InvoiceItem.Qty_Order) AS Line_Unit_Weight, " +
+                    "SUM(tbl_Product.Unit_Weight_Without_Components * tbl_InvoiceItem.Qty_Order) AS Line_Unit_Weight, " +
                     "tbl_Invoice.CustomerID, MONTH(tbl_Invoice.Invoice_Date) AS Invoice_Month " +
                     "FROM tbl_Invoice AS tbl_Invoice LEFT OUTER JOIN " +
                     "tbl_Product RIGHT OUTER JOIN " +
@@ -2346,6 +3165,8 @@ namespace BudgetExcelSheets
 
             DataTable PriorYearSalesTable = Invoices.RetrieveDataTable(sqlstring, false);
 
+            
+
             List<PriorYearSalesModel> PriorYearSaleList = PriorYearSalesTable.AsEnumerable().Select(s => new PriorYearSalesModel
             {
                AccountRef = s.Field<string>("Account_Ref"),
@@ -2356,6 +3177,25 @@ namespace BudgetExcelSheets
                InvoiceMonth = s.Field<int?>("Invoice_Month"),
                Deleted = s.Field<bool>("Deleted")
             }).ToList();
+
+            // Merge Stannah Accounts
+
+            for(int i = 1; i <= 12; i++)
+            {
+               PriorYearSalesModel StannahLtd = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "STANNAH STAIRLIFTS LTD").FirstOrDefault();
+               PriorYearSalesModel StannahEuro = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "STANNAH STAIRLIFT EURO ACCOUNT").FirstOrDefault();
+
+               if(StannahLtd != null && StannahEuro != null)
+               {
+                  StannahLtd.LineCostPrice += StannahEuro.LineCostPrice;
+                  StannahLtd.LineSalePrice += StannahEuro.LineSalePrice;
+                  StannahLtd.LineUnitWeight += StannahEuro.LineUnitWeight;
+
+                  PriorYearSaleList.Remove(StannahEuro);
+               }
+               else if(StannahLtd == null && StannahEuro != null)
+                  StannahEuro.Name = "STANNAH STAIRLIFTS LTD";
+            }
 
             PriorYearSalesTable.Dispose();
             PriorYearSalesTable = null;
@@ -2404,8 +3244,10 @@ namespace BudgetExcelSheets
             foreach (var priorYearSalesGroup in PriorYearSaleList.GroupBy(g => new { g.Name, g.Deleted }))
             {
                sSheet.Set_Cell(RowNumber, 0, priorYearSalesGroup.Key.Name, SheetNumber);
+
                if (priorYearSalesGroup.Key.Deleted)
                   sSheet.Set_FontColour("A" + (RowNumber + 1) + ":AK" + (RowNumber + 1), Color.Gray, Color.White, SheetNumber);
+
                foreach (PriorYearSalesModel priorYearSale in PriorYearSaleList.Where(w => w.Name == priorYearSalesGroup.Key.Name))
                {
                   if (priorYearSale.InvoiceMonth.HasValue)
@@ -2623,6 +3465,61 @@ namespace BudgetExcelSheets
       private void frmMain_Load(object sender, EventArgs e)
       {
          dteReportDate.EditValue = Classes.Global.ConvertToDateTime(System.DateTime.Now.AddMonths(-1).ToString("01/MM/yyyy"));
+      }
+
+      private void SetForecastYTD(Spreadsheet sSheet, int MonthColumnIndex, int RowNumber, int i)
+      {
+         switch (MonthColumnIndex)
+         {
+            case 2:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 3:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 4:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 5:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 6:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 7:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 8:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + " + N" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + " + O" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 9:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + " + N" + (i + 1) + " + P" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + " + O" + (i + 1) + " + Q" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 10:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + " + N" + (i + 1) + " + P" + (i + 1) + " + R" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + " + O" + (i + 1) + " + Q" + (i + 1) + " + S" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 11:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + " + N" + (i + 1) + " + P" + (i + 1) + " + R" + (i + 1) + " + T" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + " + O" + (i + 1) + " + Q" + (i + 1) + " + S" + (i + 1) + " + U" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 12:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + " + N" + (i + 1) + " + P" + (i + 1) + " + R" + (i + 1) + " + T" + (i + 1) + " + V" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + " + O" + (i + 1) + " + Q" + (i + 1) + " + S" + (i + 1) + " + U" + (i + 1) + " + W" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+            case 13:
+               sSheet.Set_Formula(RowNumber, 25, "=SUM(B" + (i + 1) + " + D" + (i + 1) + " + F" + (i + 1) + " + H" + (i + 1) + " + J" + (i + 1) + " + L" + (i + 1) + " + N" + (i + 1) + " + P" + (i + 1) + " + R" + (i + 1) + " + T" + (i + 1) + " + V" + (i + 1) + " + X" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               sSheet.Set_Formula(RowNumber, 26, "=SUM(C" + (i + 1) + " + E" + (i + 1) + " + G" + (i + 1) + " + I" + (i + 1) + " + K" + (i + 1) + " + M" + (i + 1) + " + O" + (i + 1) + " + Q" + (i + 1) + " + S" + (i + 1) + " + U" + (i + 1) + " + W" + (i + 1) + " + Y" + (i + 1) + ")", "FORECAST WITH WEIGHT", "#,##0");
+               break;
+         }
       }
    }
 }

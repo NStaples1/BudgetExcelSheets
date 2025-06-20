@@ -21,6 +21,7 @@ using DevExpress.Spreadsheet.Drawings;
 using DevExpress.UnitConversion;
 using DevExpress.XtraSpreadsheet.DocumentFormats.Xlsb;
 using DevExpress.Data.Svg;
+using DevExpress.XtraExport.Implementation;
 
 namespace DXTools
 {
@@ -228,10 +229,9 @@ namespace DXTools
             }
         }
 
-
-        #endregion
-        #region Range
-        public enum DocumentUnits
+      #endregion
+      #region Range
+      public enum DocumentUnits
         {
             Point,
             Millimetres,
@@ -302,11 +302,16 @@ namespace DXTools
          return columnName;
       }
 
-        public CellRange GetWorksheetRange(string sheetName)
-        {
-            Worksheet workSheet = workbook.Worksheets[sheetName];
-            return workSheet.GetDataRange();
-        }
+      public CellRange GetWorksheetRange(string sheetName)
+      {
+         Worksheet workSheet = workbook.Worksheets[sheetName];
+         return workSheet.GetDataRange();
+      }
+      public CellRange GetWorksheetRange(int sheetIndex)
+      {
+         Worksheet workSheet = workbook.Worksheets[sheetIndex];
+         return workSheet.GetDataRange();
+      }
 
       #endregion
       #region Auto Filter
@@ -364,6 +369,15 @@ namespace DXTools
             return -1;
       }
 
+      public string Get_Worksheet_Name(int SheetIndex)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetIndex];
+         if (workSheet != null)
+            return workSheet.Name;
+         else
+            return "";
+      }
+
       public void Insert_Worksheet(string SheetName, int SheetIndex = 0)
       {
          // Sheet names cant exceed 31 chars
@@ -390,6 +404,15 @@ namespace DXTools
          if (workSheet != null)
          {
             workSheet.Move(order);
+         }
+      }
+
+      public void Change_Worksheet_Colour (int sheetIndex, Color color)
+      {
+         Worksheet workSheet = workbook.Worksheets[sheetIndex];
+         if (workSheet != null)
+         {
+            workSheet.ActiveView.TabColor = color;
          }
       }
 
@@ -623,6 +646,29 @@ namespace DXTools
          }
       }
 
+      public int Get_Row_Index_From_Name(string Name, string SheetName)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetName];
+         if (workSheet == null)
+         {
+            throw new Exception("Unable to locate Sheet " + SheetName);
+         }
+         else
+         {
+            int RowIndex = 0;
+            for (int i = 1; i < 200; i++)
+            {
+               Cell CellValue = workSheet.Cells["A" + i];
+               if (CellValue.Value.TextValue == Name)
+               {
+                  RowIndex = CellValue.RowIndex;
+               }
+            }
+
+            return RowIndex;
+         }
+      }
+
       public CellValue Get_Cell_Value(int RowIndex, int ColumnIndex, int SheetIndex)
       {
          Worksheet workSheet = workbook.Worksheets[SheetIndex];
@@ -634,6 +680,25 @@ namespace DXTools
             return cell.Value;
          }
       }
+
+      //public CellValue Get_Cell_Formula_Value(int RowIndex, int ColumnIndex, string SheetName)
+      //{
+      //   Worksheet workSheet = workbook.Worksheets[SheetName];
+      //   if (workSheet == null)
+      //      throw new Exception("Unable to locate Sheet " + SheetName);
+      //   else
+      //   {
+      //      Cell cell = workSheet.Cells[RowIndex, ColumnIndex];
+      //      if(cell.HasFormula)
+      //      {
+      //         cell.SetValueFromText(cell.DisplayText);
+      //         cell.Formula = string.Empty;
+      //         return cell.Value;
+      //      }
+      //      else
+      //         return cell.Value;
+      //   }
+      //}
 
       public string Get_Cell_Text(int RowIndex, int ColumnIndex, int SheetIndex)
       {
@@ -690,7 +755,25 @@ namespace DXTools
             }
         }
 
-    
+      public string Get_Cell_Text_From_Formula(int RowIndex, int ColumnIndex, string SheetName)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetName];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet " + SheetName);
+         else
+         {
+            workSheet.Calculate();
+            Cell cell = workSheet.Cells[RowIndex, ColumnIndex];
+
+            if (cell.Value.IsDateTime)
+               return Global.ConvertToDateTime(cell.Value.DateTimeValue).ToString("dd/MM/yyyy");
+            else if (cell.Value.IsNumeric)
+               return Global.ConvertDoubleToString(cell.Value.NumericValue, cell.NumberFormat);
+            else
+               return cell.Value.TextValue;
+         }
+      }
+
       public CellValue Get_Cell_Formula(int RowIndex, int ColumnIndex, int SheetIndex)
       {
          Worksheet workSheet = workbook.Worksheets[SheetIndex];
@@ -842,13 +925,27 @@ namespace DXTools
          }
       }
 
-        #endregion
+      public void Set_Formula(int RowIndex, int ColumnIndex, string FormulaValue, string SheetName, string formatString = "")
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetName];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet Name " + SheetName);
+         else
+         {
+            Cell cell = workSheet.Cells[RowIndex, ColumnIndex];
+            cell.SetValueFromText(FormulaValue);
+            if (!string.IsNullOrEmpty(formatString))
+               cell.NumberFormat = formatString;
+         }
+      }
 
-        
+      #endregion
 
-        #region Set Font
 
-        public void Set_Font(string CellReference, FontModel mFont, string SheetName)
+
+      #region Set Font
+
+      public void Set_Font(string CellReference, FontModel mFont, string SheetName)
       {
          Worksheet workSheet = workbook.Worksheets[SheetName];
          if (workSheet == null)
@@ -939,7 +1036,19 @@ namespace DXTools
          }
       }
 
-        public void Set_Rotation(string CellReference, int SheetIndex, int Rotation)
+      public void Set_Font_Size(string cellRange, int FontSize, int SheetIndex)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetIndex];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet index " + SheetIndex);
+         else
+         {
+            CellRange range = workSheet.Range[cellRange];
+            range.Font.Size = FontSize;
+         }
+      }
+
+      public void Set_Rotation(string CellReference, int SheetIndex, int Rotation)
         {
             Worksheet workSheet = workbook.Worksheets[SheetIndex];
             if (workSheet == null)
