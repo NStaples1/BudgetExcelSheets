@@ -29,6 +29,7 @@ using DevExpress.Utils.Svg;
 using System.Security.Principal;
 using DevExpress.XtraEditors.Popup;
 using System.IO;
+using DevExpress.Charts.Native;
 
 namespace BudgetExcelSheets
 {
@@ -283,16 +284,18 @@ namespace BudgetExcelSheets
                      sSheet.Set_Cell(RowNumber, 1, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]) + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
                      sSheet.Set_Cell(RowNumber, 2, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]) + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
                      sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                     if(EuroCost > 0)
-                        sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) + Classes.Global.DivideNum(Profit, EuroCost, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                     else
-                        sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
 
-                     if(EuroSale > 0)
-                        sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) + Classes.Global.DivideNum(Profit, EuroSale, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                     else
-                        sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]), 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     double TotalCost = Classes.Global.ConvertToDouble(row["Line_Cost_Price"]) + EuroCost;
+                     double ProfitTotalCost = Classes.Global.DivideNum(Profit, TotalCost, 4);
+                     double ProfitMarginCostPercentage = ProfitTotalCost * 100;
 
+                     sSheet.Set_Cell(RowNumber, 4, ProfitMarginCostPercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalSale = Classes.Global.ConvertToDouble(row["Line_Sale_Price"]) + EuroSale;
+                     double ProfitTotalSale = Classes.Global.DivideNum(Profit, TotalSale, 4);
+                     double ProfitMarginSalePercentage = ProfitTotalSale * 100;
+
+                     sSheet.Set_Cell(RowNumber, 5, ProfitMarginSalePercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
 
                      RowNumber++;
                   }
@@ -404,15 +407,16 @@ namespace BudgetExcelSheets
                      sSheet.Set_Cell(RowNumber, 1, Cost + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
                      sSheet.Set_Cell(RowNumber, 2, Sale + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
                      sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                     if(EuroCost > 0)
-                        sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Cost, 4) + Classes.Global.DivideNum(Profit, EuroCost, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                     else
-                        sSheet.Set_Cell(RowNumber, 4, Classes.Global.DivideNum(Profit, Cost, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
 
-                     if(EuroSale > 0)
-                        sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Sale, 4) + Classes.Global.DivideNum(Profit, EuroSale, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
-                     else
-                        sSheet.Set_Cell(RowNumber, 5, Classes.Global.DivideNum(Profit, Sale, 4) * 100, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     double TotalCost = Cost + EuroCost;
+                     double ProfitTotalCost = Classes.Global.DivideNum(Profit, TotalCost, 4);
+                     double ProfitMarginCostPercentage = ProfitTotalCost * 100;
+                     sSheet.Set_Cell(RowNumber, 4, ProfitMarginCostPercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalSale = Sale + EuroSale;
+                     double ProfitTotalSale = Classes.Global.DivideNum(Profit, TotalSale, 4);
+                     double ProfitMarginSalePercentage = ProfitTotalSale * 100;
+                     sSheet.Set_Cell(RowNumber, 5, ProfitMarginSalePercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
 
                      RowNumber++;
                   }
