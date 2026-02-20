@@ -939,6 +939,25 @@ namespace DXTools
          }
       }
 
+      public void Set_Tree_Map(int SheetIndex, string TopLeft, string BottomRight, string Title, string ArgumentsRange, string ValueRange)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetIndex];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet Index " + SheetIndex);
+         else
+         {
+            Chart chart = workSheet.Charts.Add(ChartType.Treemap);
+            chart.TopLeftCell = workSheet.Cells[TopLeft];
+            chart.BottomRightCell = workSheet.Cells[BottomRight];
+            chart.Title.Visible = true;
+            chart.Title.SetValue(Title);
+            chart.Title.Font.Size = 10;
+            chart.Legend.Visible = false;
+            chart.Series.Add(workSheet[ArgumentsRange], workSheet[ValueRange]);
+         }
+      }
+
+
       #endregion
 
 

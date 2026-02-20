@@ -353,7 +353,7 @@ namespace BudgetExcelSheets
                    "WHERE(tbl_Invoice.Invoice_Date IS NULL OR " +
                    "tbl_Invoice.Invoice_Date BETWEEN '" + Year + "-01-01' AND '" + EndDate + "') " +
                    "GROUP BY tbl_Invoice.CustomerID) Inv ON tbl_Customer.CustomerID = Inv.CustomerID " +
-                   "WHERE tbl_Customer.Deleted = 0 " +
+                   "WHERE tbl_Customer.Deleted = 0 OR tbl_Customer.CustomerID = '6c009bb3-84d4-48cc-97cc-379cd017d3c7' " +
                    "ORDER BY tbl_Customer.Name ";
 
                DataTable YTDSales = Invoices.RetrieveDataTable(sqlstring, false);
@@ -421,9 +421,43 @@ namespace BudgetExcelSheets
                      RowNumber++;
                   }
                   else if (row["Name"].ToString() == "STANNAH STAIRLIFTS LTD")
+                  {  }
+                  else if (row["Name"].ToString() == "NEW WAVE DOORS DIRECT LTD")
                   {
-                     
+                     DataRow[] EuroRow = YTDSales.Select("Name = 'DELTACO 1 LTD'");
+                     double EuroCost = 0;
+                     double EuroSale = 0;
+
+                     if (EuroRow.Length > 0)
+                     {
+                        EuroSale = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Sale_Price"], 2);
+                        EuroCost = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Cost_Price"], 2);
+                     }
+
+                     double Cost = Classes.Global.ConvertToDouble(row["Line_Cost_Price"]);
+                     double Sale = Classes.Global.ConvertToDouble(row["Line_Sale_Price"]);
+
+                     Profit = (Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2)) + EuroSale - EuroCost;
+
+                     sSheet.Set_Cell(RowNumber, 0, "NEW WAVE DOORS DIRECT LTD", SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, Cost + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, Sale + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalCost = Cost + EuroCost;
+                     double ProfitTotalCost = Classes.Global.DivideNum(Profit, TotalCost, 4);
+                     double ProfitMarginCostPercentage = ProfitTotalCost * 100;
+                     sSheet.Set_Cell(RowNumber, 4, ProfitMarginCostPercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalSale = Sale + EuroSale;
+                     double ProfitTotalSale = Classes.Global.DivideNum(Profit, TotalSale, 4);
+                     double ProfitMarginSalePercentage = ProfitTotalSale * 100;
+                     sSheet.Set_Cell(RowNumber, 5, ProfitMarginSalePercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
                   }
+                  else if (row["Name"].ToString() == "DELTACO 1 LTD")
+                  { }
                   else
                   {
                      Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
@@ -507,9 +541,19 @@ namespace BudgetExcelSheets
 
                DataTable newMonthTable = resort(MonthTurnoverTable, "Line_Sale_Price", "DESC");
 
+               DataRow[] NewWaveDoors = YTDSales.Select("Name = 'NEW WAVE DOORS DIRECT LTD'");
+               DataRow[] DelTaco = YTDSales.Select("Name = 'DELTACO 1 LTD'");
+               double CostPrice = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Cost_Price"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Cost_Price"]);
+               double SalePrice = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Sale_Price"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Sale_Price"]);
+               double UnitWeight = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Unit_Weight"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Unit_Weight"]);
+
+               NewWaveDoors[0]["Line_Cost_Price"] = CostPrice;
+               NewWaveDoors[0]["Line_Sale_Price"] = SalePrice;
+               NewWaveDoors[0]["Line_Unit_Weight"] = UnitWeight;
+
                DataTable newYTDTable = resort(YTDSales, "Line_Sale_Price", "DESC");
 
-               for (int i = 0; i < 16; i++)
+               for (int i = 0; i < 15; i++)
                {
                   if (newMonthTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFTS LTD")
                   { }
@@ -532,9 +576,9 @@ namespace BudgetExcelSheets
 
                RowNumber = YTDSalesTop15;
 
-               for(int i = 0; i < 16; i++)
+               for(int i = 0; i < 15; i++)
                {
-                  if (newYTDTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
+                  if (newYTDTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFTS LTD")
                   { }
                   else
                   {
@@ -3197,14 +3241,14 @@ namespace BudgetExcelSheets
                Deleted = s.Field<bool>("Deleted")
             }).ToList();
 
-            // Merge Stannah Accounts
+            // Merge Stannah Accounts & New Wave Accounts
 
             for(int i = 1; i <= 12; i++)
             {
                PriorYearSalesModel StannahLtd = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "STANNAH STAIRLIFTS LTD").FirstOrDefault();
                PriorYearSalesModel StannahEuro = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "STANNAH STAIRLIFT EURO ACCOUNT").FirstOrDefault();
 
-               if(StannahLtd != null && StannahEuro != null)
+               if (StannahLtd != null && StannahEuro != null)
                {
                   StannahLtd.LineCostPrice += StannahEuro.LineCostPrice;
                   StannahLtd.LineSalePrice += StannahEuro.LineSalePrice;
@@ -3212,8 +3256,28 @@ namespace BudgetExcelSheets
 
                   PriorYearSaleList.Remove(StannahEuro);
                }
-               else if(StannahLtd == null && StannahEuro != null)
+               else if (StannahLtd == null && StannahEuro != null)
+               {
                   StannahEuro.Name = "STANNAH STAIRLIFTS LTD";
+                  StannahEuro.Deleted = false;
+               }
+
+               PriorYearSalesModel NewWaveDirect = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "NEW WAVE DOORS DIRECT LTD").FirstOrDefault();
+               PriorYearSalesModel Deltaco = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "DELTACO 1 LTD").FirstOrDefault();
+
+               if (NewWaveDirect != null && Deltaco != null)
+               {
+                  NewWaveDirect.LineCostPrice += Deltaco.LineCostPrice;
+                  NewWaveDirect.LineSalePrice += Deltaco.LineSalePrice;
+                  NewWaveDirect.LineUnitWeight += Deltaco.LineUnitWeight;
+
+                  PriorYearSaleList.Remove(Deltaco);
+               }
+               else if (NewWaveDirect == null && Deltaco != null)
+               {
+                  Deltaco.Name = "NEW WAVE DOORS DIRECT LTD";
+                  Deltaco.Deleted = false;
+               }
             }
 
             PriorYearSalesTable.Dispose();
@@ -3260,12 +3324,17 @@ namespace BudgetExcelSheets
 
             sSheet.FormatCell("B:AQ", "£ #,##0", SheetNumber);
 
+            PriorYearSaleList = PriorYearSaleList.OrderBy(o => o.Name).ToList();
+
             foreach (var priorYearSalesGroup in PriorYearSaleList.GroupBy(g => new { g.Name, g.Deleted }))
             {
                sSheet.Set_Cell(RowNumber, 0, priorYearSalesGroup.Key.Name, SheetNumber);
 
                if (priorYearSalesGroup.Key.Deleted)
-                  sSheet.Set_FontColour("A" + (RowNumber + 1) + ":AK" + (RowNumber + 1), Color.Gray, Color.White, SheetNumber);
+               {
+                  if(priorYearSalesGroup.Key.Name != "NEW WAVE DOORS DIRECT LTD")
+                     sSheet.Set_FontColour("A" + (RowNumber + 1) + ":AK" + (RowNumber + 1), Color.Gray, Color.White, SheetNumber);
+               }
 
                foreach (PriorYearSalesModel priorYearSale in PriorYearSaleList.Where(w => w.Name == priorYearSalesGroup.Key.Name))
                {
@@ -3377,6 +3446,11 @@ namespace BudgetExcelSheets
             sSheet.Set_Formula(RowNumber, 41, "=SUM(" + sSheet.GetExcelColumnName(42) + "3:" + sSheet.GetExcelColumnName(42) + (RowNumber) + ")", SheetNumber);
             sSheet.Set_Formula(RowNumber, 42, "=IFERROR(" + sSheet.GetExcelColumnName(41) + (RowNumber + 1) + "/" + sSheet.GetExcelColumnName(42) + (RowNumber + 1) + ",0)", SheetNumber, "£ #,##0.00");
 
+            RowNumber += 2;
+
+            sSheet.Set_Tree_Map(SheetNumber, "A" + (RowNumber + 1), "N" + (RowNumber + 41), "YTD Sales Tree Map", "A3:A" + (RowNumber - 2), "AO3:AO" + (RowNumber - 2));
+
+            RowNumber -= 2;
             sSheet.Set_AllBorders("A" + (RowNumber + 1) + ":AQ" + (RowNumber + 1), Color.Black, SheetNumber);
             sSheet.Set_OutsideBorders("A" + (RowNumber + 1) + ":AQ" + (RowNumber + 1), Color.Black, SheetNumber, BorderLineStyle.Medium);
             sSheet.Set_FontColour("A" + (RowNumber + 1) + ":AQ" + (RowNumber + 1), Color.LightGray, Color.Black, SheetNumber);
