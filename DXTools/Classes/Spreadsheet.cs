@@ -416,6 +416,53 @@ namespace DXTools
          }
       }
 
+      public void Set_Bar_Chart(string CellReferenceRange, ChartType chartType, int SheetIndex, string TopLeft, string BottomRight, string Title = "", LegendPosition legendPosition = LegendPosition.Bottom, bool AddColor = false)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetIndex];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet Index " + SheetIndex);
+         else
+         {
+            Chart chart = workSheet.Charts.Add(chartType);
+            chart.SelectData(workSheet[CellReferenceRange], ChartDataDirection.Column);
+            chart.TopLeftCell = workSheet.Cells[TopLeft];
+            chart.BottomRightCell = workSheet.Cells[BottomRight];
+            chart.Title.Visible = true;
+            chart.Title.SetValue(Title);
+            chart.Title.Font.Size = 10;
+
+            chart.Views[0].DataLabels.ShowValue = false;
+            chart.Views[0].DataLabels.Font.Bold = false;
+            chart.Views[0].VaryColors = true;
+            chart.Legend.Visible = false;
+
+            chart.Legend.Position = legendPosition;
+         }
+      }
+
+      public void Set_Bar_Chart(string XRange, string YRange, ChartType chartType, int SheetIndex, string TopLeft, string BottomRight, string Title = "", LegendPosition legendPosition = LegendPosition.Bottom, bool AddColor = false, string seriesName = null)
+      {
+         Worksheet workSheet = workbook.Worksheets[SheetIndex];
+         if (workSheet == null)
+            throw new Exception("Unable to locate Sheet Index " + SheetIndex);
+         else
+         {
+            Chart chart = workSheet.Charts.Add(chartType);
+            chart.Series.Add(workSheet[YRange], workSheet[XRange]);
+            chart.TopLeftCell = workSheet.Cells[TopLeft];
+            chart.BottomRightCell = workSheet.Cells[BottomRight];
+            chart.Title.Visible = true;
+            chart.Title.SetValue(Title);
+            chart.Title.Font.Size = 10;
+
+            chart.Views[0].DataLabels.ShowValue = false;
+            chart.Views[0].DataLabels.Font.Bold = false;
+            chart.Views[0].VaryColors = true;
+            chart.Legend.Visible = false;
+            chart.Legend.Position = legendPosition;
+         }
+      }
+
       #endregion
       #region Auto fit
 

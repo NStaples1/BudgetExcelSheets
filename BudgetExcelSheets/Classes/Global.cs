@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +11,122 @@ namespace BudgetExcelSheets.Classes
 {
     public static class Global
     {
-        public static string ConvertToString(object sValue)
+      public static bool hasArgs { get; set; }
+
+      private static string str_EmailHost;
+      private static string str_EmailHostUser;
+      private static string str_EmailHostPassword;
+      private static int int_EmailHostPort;
+      private static bool bol_EmailHostSSL;
+      private static bool bol_EmailHostUsePort;
+
+      public static bool EmailHostUsePort
+      {
+         get
+         {
+            return bol_EmailHostUsePort;
+         }
+         set
+         {
+            bol_EmailHostUsePort = value;
+         }
+      }
+
+      public static bool EmailHostSSL
+      {
+         get
+         {
+            return bol_EmailHostSSL;
+         }
+         set
+         {
+            bol_EmailHostSSL = value;
+         }
+      }
+
+      public static int EmailHostPort
+      {
+         get
+         {
+            return int_EmailHostPort;
+         }
+         set
+         {
+            int_EmailHostPort = value;
+         }
+      }
+
+      public static string EmailHost
+      {
+         get
+         {
+            return str_EmailHost;
+         }
+         set
+         {
+            str_EmailHost = value;
+         }
+      }
+
+      public static string EmailHostUser
+      {
+         get
+         {
+            return str_EmailHostUser;
+         }
+         set
+         {
+            str_EmailHostUser = value;
+         }
+      }
+
+      public static string EmailHostPassword
+      {
+         get
+         {
+            return str_EmailHostPassword;
+         }
+         set
+         {
+            str_EmailHostPassword = value;
+         }
+      }
+
+      public static string ReadSignature()
+      {
+         try
+         {
+            string appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\Microsoft\\Signatures";
+            string signature = string.Empty;
+            DirectoryInfo diInfo = new DirectoryInfo(appDataDir);
+
+            if (diInfo.Exists)
+            {
+               FileInfo[] fiSignature = diInfo.GetFiles("*.htm");
+
+               if (fiSignature.Length > 0)
+               {
+                  StreamReader sr = new StreamReader(fiSignature[0].FullName, Encoding.Default);
+                  signature = sr.ReadToEnd();
+
+                  if (!string.IsNullOrEmpty(signature))
+                  {
+                     string fileName = fiSignature[0].Name.Replace(fiSignature[0].Extension, string.Empty).Replace(" ", "%20");
+                     signature = signature.Replace(fileName + "_files/", appDataDir + "/" + fileName.Replace("%20", " ") + "_files/");
+                  }
+               }
+            }
+            return signature;
+         }
+         catch (Exception ex)
+         {
+            // We dont want to show an error but we will log it
+            ProcessError.Return_Error("Global", "ReadSignature", ex);
+            return string.Empty;
+         }
+      }
+
+      public static string ConvertToString(object sValue)
         {
             try
             {

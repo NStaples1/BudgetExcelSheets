@@ -65,9 +65,14 @@
     <Reference Include="VPS.Core">
       <HintPath>..\..\..\VPS Transactional Services\VPS.Core\bin\Debug\VPS.Core.dll</HintPath>
     </Reference>
+    <Reference Include="VPSSecurity, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Saltire\VPSSecurity\bin\Debug\VPSSecurity.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Classes\Global.cs" />
+    <Compile Include="Classes\SupportMail.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -121,7 +126,6 @@
     <Content Include="report.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-
   <ItemGroup>
     <Analyzer Include="C:\Program Files\DevExpress 25.2\Components\Offline Packages\devexpress.data\25.2.3\analyzers\dotnet\DevExpress.Generator.dll" Visible="false" Condition="Exists('C:\Program Files\DevExpress 25.2\Components\Offline Packages\devexpress.data\25.2.3\analyzers\dotnet\DevExpress.Generator.dll')" />
   </ItemGroup>
