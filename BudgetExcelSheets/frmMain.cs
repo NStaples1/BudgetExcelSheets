@@ -322,6 +322,43 @@ namespace BudgetExcelSheets
                   {
 
                   }
+                  else if (row["Name"].ToString() == "DIGICO (UK) LTD")
+                  {
+                     DataRow[] EuroRow = MonthTurnoverTable.Select("Name = 'A6 AUDIO LIMITED'");
+                     double EuroCost = 0;
+                     double EuroSale = 0;
+
+                     if (EuroRow.Length > 0)
+                     {
+                        EuroSale = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Sale_Price"], 2);
+                        EuroCost = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Cost_Price"], 2);
+                     }
+
+                     Profit = (Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2)) + EuroSale - EuroCost;
+
+                     sSheet.Set_Cell(RowNumber, 0, "DIGICO (UK) LTD", SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, Classes.Global.ConvertToDouble(row["Line_Cost_Price"]) + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, Classes.Global.ConvertToDouble(row["Line_Sale_Price"]) + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalCost = Classes.Global.ConvertToDouble(row["Line_Cost_Price"]) + EuroCost;
+                     double ProfitTotalCost = Classes.Global.DivideNum(Profit, TotalCost, 4);
+                     double ProfitMarginCostPercentage = ProfitTotalCost * 100;
+
+                     sSheet.Set_Cell(RowNumber, 4, ProfitMarginCostPercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalSale = Classes.Global.ConvertToDouble(row["Line_Sale_Price"]) + EuroSale;
+                     double ProfitTotalSale = Classes.Global.DivideNum(Profit, TotalSale, 4);
+                     double ProfitMarginSalePercentage = ProfitTotalSale * 100;
+
+                     sSheet.Set_Cell(RowNumber, 5, ProfitMarginSalePercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
+                  }
+                  else if (row["Name"].ToString() == "A6 AUDIO LIMITED")
+                  {
+
+                  }
                   else
                   {
                      Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
@@ -477,6 +514,42 @@ namespace BudgetExcelSheets
                   }
                   else if (row["Name"].ToString() == "DELTACO 1 LTD")
                   { }
+                  else if (row["Name"].ToString() == "DIGICO (UK) LTD")
+                  {
+                     DataRow[] EuroRow = YTDSales.Select("Name = 'A6 AUDIO LIMITED'");
+                     double EuroCost = 0;
+                     double EuroSale = 0;
+
+                     if (EuroRow.Length > 0)
+                     {
+                        EuroSale = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Sale_Price"], 2);
+                        EuroCost = Classes.Global.ConvertToDouble(EuroRow[0]["Line_Cost_Price"], 2);
+                     }
+
+                     double Cost = Classes.Global.ConvertToDouble(row["Line_Cost_Price"]);
+                     double Sale = Classes.Global.ConvertToDouble(row["Line_Sale_Price"]);
+
+                     Profit = (Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2)) + EuroSale - EuroCost;
+
+                     sSheet.Set_Cell(RowNumber, 0, "DIGICO (UK) LTD", SheetNumber);
+                     sSheet.Set_Cell(RowNumber, 1, Cost + EuroCost, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 2, Sale + EuroSale, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+                     sSheet.Set_Cell(RowNumber, 3, Profit, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalCost = Cost + EuroCost;
+                     double ProfitTotalCost = Classes.Global.DivideNum(Profit, TotalCost, 4);
+                     double ProfitMarginCostPercentage = ProfitTotalCost * 100;
+                     sSheet.Set_Cell(RowNumber, 4, ProfitMarginCostPercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     double TotalSale = Sale + EuroSale;
+                     double ProfitTotalSale = Classes.Global.DivideNum(Profit, TotalSale, 4);
+                     double ProfitMarginSalePercentage = ProfitTotalSale * 100;
+                     sSheet.Set_Cell(RowNumber, 5, ProfitMarginSalePercentage, SheetNumber, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Right);
+
+                     RowNumber++;
+                  }
+                  else if (row["Name"].ToString() == "A6 AUDIO LIMITED")
+                  { }
                   else
                   {
                      Profit = Classes.Global.ConvertToDouble(row["Line_Sale_Price"], 2) - Classes.Global.ConvertToDouble(row["Line_Cost_Price"], 2);
@@ -558,6 +631,27 @@ namespace BudgetExcelSheets
                sSheet.Set_Font_Size("H" + (RowNumber + 1), 14, DevExpress.Spreadsheet.SpreadsheetHorizontalAlignment.Center, SheetNumber);
                sSheet.Set_FontColour("H" + (RowNumber + 1) + ":H" + (RowNumber + 1), LightGreen, Color.Black, SheetNumber);
 
+               DataRow[] Digico = MonthTurnoverTable.Select("Name = 'DIGICO (UK) LTD'");
+               DataRow[] A6Audio = MonthTurnoverTable.Select("Name = 'A6 AUDIO LIMITED'");
+               if (Digico.Length == 0)
+               {
+                  DataRow dataRow = MonthTurnoverTable.NewRow();
+                  Digico = new DataRow[] { dataRow };
+               }
+               if (A6Audio.Length == 0)
+               {
+                  DataRow dataRow = MonthTurnoverTable.NewRow();
+                  A6Audio = new DataRow[] { dataRow };
+               }
+
+               double CostPrice = Classes.Global.ConvertToDouble(Digico[0]["Line_Cost_Price"]) + Classes.Global.ConvertToDouble(A6Audio[0]["Line_Cost_Price"]);
+               double SalePrice = Classes.Global.ConvertToDouble(Digico[0]["Line_Sale_Price"]) + Classes.Global.ConvertToDouble(A6Audio[0]["Line_Sale_Price"]);
+               double UnitWeight = Classes.Global.ConvertToDouble(Digico[0]["Line_Unit_Weight"]) + Classes.Global.ConvertToDouble(A6Audio[0]["Line_Unit_Weight"]);
+
+               Digico[0]["Line_Cost_Price"] = CostPrice;
+               Digico[0]["Line_Sale_Price"] = SalePrice;
+               Digico[0]["Line_Unit_Weight"] = UnitWeight;
+
                DataTable newMonthTable = resort(MonthTurnoverTable, "Line_Sale_Price", "DESC");
 
                DataRow[] NewWaveDoors = YTDSales.Select("Name = 'NEW WAVE DOORS DIRECT LTD'");
@@ -572,14 +666,34 @@ namespace BudgetExcelSheets
                   DataRow dataRow = YTDSales.NewRow();
                   DelTaco = new DataRow[] { dataRow };
                }
+               Digico = YTDSales.Select("Name = 'DIGICO (UK) LTD'");
+               A6Audio = YTDSales.Select("Name = 'A6 AUDIO LIMITED'");
+               if(Digico.Length == 0)
+               {
+                  DataRow dataRow = YTDSales.NewRow();
+                  Digico = new DataRow[] { dataRow };
+               }
+               if(A6Audio.Length == 0)
+               {
+                  DataRow dataRow = YTDSales.NewRow();
+                  A6Audio = new DataRow[] { dataRow };
+               }
 
-               double CostPrice = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Cost_Price"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Cost_Price"]);
-               double SalePrice = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Sale_Price"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Sale_Price"]);
-               double UnitWeight = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Unit_Weight"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Unit_Weight"]);
+               CostPrice = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Cost_Price"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Cost_Price"]);
+               SalePrice = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Sale_Price"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Sale_Price"]);
+               UnitWeight = Classes.Global.ConvertToDouble(NewWaveDoors[0]["Line_Unit_Weight"]) + Classes.Global.ConvertToDouble(DelTaco[0]["Line_Unit_Weight"]);
 
                NewWaveDoors[0]["Line_Cost_Price"] = CostPrice;
                NewWaveDoors[0]["Line_Sale_Price"] = SalePrice;
                NewWaveDoors[0]["Line_Unit_Weight"] = UnitWeight;
+
+               CostPrice = Classes.Global.ConvertToDouble(Digico[0]["Line_Cost_Price"]) + Classes.Global.ConvertToDouble(A6Audio[0]["Line_Cost_Price"]);
+               SalePrice = Classes.Global.ConvertToDouble(Digico[0]["Line_Sale_Price"]) + Classes.Global.ConvertToDouble(A6Audio[0]["Line_Sale_Price"]);
+               UnitWeight = Classes.Global.ConvertToDouble(Digico[0]["Line_Unit_Weight"]) + Classes.Global.ConvertToDouble(A6Audio[0]["Line_Unit_Weight"]);
+
+               Digico[0]["Line_Cost_Price"] = CostPrice;
+               Digico[0]["Line_Sale_Price"] = SalePrice;
+               Digico[0]["Line_Unit_Weight"] = UnitWeight;
 
                DataTable newYTDTable = resort(YTDSales, "Line_Sale_Price", "DESC");
 
@@ -591,8 +705,11 @@ namespace BudgetExcelSheets
                   {
                      if (newMonthTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
                         sSheet.Set_Cell(RowNumber, 0, "STANNAH STAIRLIFTS LTD", SheetNumber);
+                     else if (newMonthTable.Rows[i]["Name"].ToString() == "A6 AUDIO LIMITED")
+                        sSheet.Set_Cell(RowNumber, 0, "DIGICO (UK) LTD", SheetNumber);
                      else
                         sSheet.Set_Cell(RowNumber, 0, Classes.Global.ConvertToString(newMonthTable.Rows[i]["Name"]).Trim(), SheetNumber);
+
 
                      sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'CURRENT MONTH TURNOVER SUMMARY'!A:C,3,FALSE), 0)", SheetNumber, "£ #,##0");
                      sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(" + sSheet.GetExcelColumnName(1) + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:O," + MonthColumnIndex + ",FALSE), 0)", SheetNumber, "£ #,##0");
@@ -614,6 +731,8 @@ namespace BudgetExcelSheets
                   {
                      if (newYTDTable.Rows[i]["Name"].ToString() == "STANNAH STAIRLIFT EURO ACCOUNT")
                         sSheet.Set_Cell(RowNumber, 8, "STANNAH STAIRLIFTS LTD", SheetNumber);
+                     else if (newYTDTable.Rows[i]["Name"].ToString() == "A6 AUDIO LIMITED")
+                        sSheet.Set_Cell(RowNumber, 8, "DIGICO (UK) LTD", SheetNumber);
                      else
                         sSheet.Set_Cell(RowNumber, 8, Classes.Global.ConvertToString(newYTDTable.Rows[i]["Name"]).Trim(), SheetNumber);
 
@@ -3021,6 +3140,8 @@ namespace BudgetExcelSheets
 
                sSheet.Set_Cell(RowNumber, 1, "TOTALS", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Merge_Cells("B1:D1", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 4, "TONNAGE TOTALS", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Merge_Cells("E1:G1", SheetNumber);
 
                RowNumber++;
 
@@ -3032,11 +3153,14 @@ namespace BudgetExcelSheets
                sSheet.Set_Cell(RowNumber, 1, Year + " YTD", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Cell(RowNumber, 2, "BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Cell(RowNumber, 3, "VAR AGAINST BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 4, Year + " YTD TONNAGE", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 5, "BUDGET TONNAGE", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 6, "VAR AGAINST BUDGET", SheetNumber, SpreadsheetHorizontalAlignment.Center);
 
                sSheet.Set_FontColour("A1:A2", LightGreen, Color.Black, SheetNumber);
-               sSheet.Set_FontColour("B1:D2", Color.LightGray, Color.Black, SheetNumber);
+               sSheet.Set_FontColour("B1:G2", Color.LightGray, Color.Black, SheetNumber);
 
-               sSheet.Set_Bold_Range("A1:D2", true, SheetNumber);
+               sSheet.Set_Bold_Range("A1:G2", true, SheetNumber);
 
                RowNumber++;
 
@@ -3054,6 +3178,9 @@ namespace BudgetExcelSheets
                            sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:BZ,38,FALSE),0)", SheetNumber, "£ #,##0.00");
                            sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " BUDGET'!A:AK,14,FALSE),0)", SheetNumber, "£ #,##0.00");
                            sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+                           sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:BZ,39,FALSE),0)", SheetNumber, "#,##0.00");
+                           sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'FORECAST WITH WEIGHT'!A:BZ,27,FALSE),0)", SheetNumber, "#,##0.00");
+                           sSheet.Set_Formula(RowNumber, 6, "=IFERROR((E" + (RowNumber + 1) + "- F" + (RowNumber + 1) + ")/F" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
 
                            double YTDValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), Year + " MONTH SALES PER CUSTOMER"), 37, Year + " MONTH SALES PER CUSTOMER").ToString().Replace("£", ""));
                            double BudgetValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), Year + " BUDGET"), 13, Year + " BUDGET").ToString().Replace("£", ""));
@@ -3069,16 +3196,19 @@ namespace BudgetExcelSheets
                sSheet.Set_Formula(RowNumber, 1, "=SUBTOTAL(9, B3:B" + RowNumber + ")", SheetNumber, "£ #,##0.00");
                sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(9, C3:C" + RowNumber + ")", SheetNumber, "£ #,##0.00");
                sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+               sSheet.Set_Formula(RowNumber, 4, "=SUBTOTAL(9, E3:E" + RowNumber + ")", SheetNumber, "£ #,##0.00");
+               sSheet.Set_Formula(RowNumber, 5, "=SUBTOTAL(9, F3:F" + RowNumber + ")", SheetNumber, "£ #,##0.00");
+               sSheet.Set_Formula(RowNumber, 6, "=IFERROR((E" + (RowNumber + 1) + "- F" + (RowNumber + 1) + ")/F" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
 
-               sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), true, SheetNumber);
+               sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":G" + (RowNumber + 1), true, SheetNumber);
 
                RowNumber++;
 
-               sSheet.Set_AllBorders("A1:D" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("A1:G" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
                sSheet.Set_OutsideBorders("A1", Color.Black, SheetNumber, BorderLineStyle.Medium);
-               sSheet.Set_OutsideBorders("B1:C2", Color.Black, SheetNumber, BorderLineStyle.Medium);
-               sSheet.Set_Font_Size("A1:C" + (RowNumber + 1), 12, SheetNumber);
-               sSheet.Auto_fit(0, 2, SheetNumber);
+               sSheet.Set_OutsideBorders("B1:G2", Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_Font_Size("A1:G" + (RowNumber + 1), 12, SheetNumber);
+               sSheet.Auto_fit(0, 6, SheetNumber);
 
                /**************************************************************************************************************************
                * YTD LOWER THAN LAST YEAR
@@ -3091,6 +3221,8 @@ namespace BudgetExcelSheets
 
                sSheet.Set_Cell(RowNumber, 1, "TOTALS", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Merge_Cells("B1:D1", SheetNumber);
+               sSheet.Set_Cell(RowNumber, 4, "TONNAGE TOTALS", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Merge_Cells("E1:G1", SheetNumber);
 
                RowNumber++;
 
@@ -3102,11 +3234,14 @@ namespace BudgetExcelSheets
                sSheet.Set_Cell(RowNumber, 1, Year + " YTD", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Cell(RowNumber, 2, LastYear + " YTD", SheetNumber, SpreadsheetHorizontalAlignment.Center);
                sSheet.Set_Cell(RowNumber, 3, "VAR AGAINST " + LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 4, Year + " YTD TONNAGE", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 5, LastYear + " YTD TONNAGE", SheetNumber, SpreadsheetHorizontalAlignment.Center);
+               sSheet.Set_Cell(RowNumber, 6, "VAR AGAINST " + LastYear, SheetNumber, SpreadsheetHorizontalAlignment.Center);
 
                sSheet.Set_FontColour("A1:A2", LightGreen, Color.Black, SheetNumber);
-               sSheet.Set_FontColour("B1:D2", Color.LightGray, Color.Black, SheetNumber);
+               sSheet.Set_FontColour("B1:G2", Color.LightGray, Color.Black, SheetNumber);
 
-               sSheet.Set_Bold_Range("A1:D2", true, SheetNumber);
+               sSheet.Set_Bold_Range("A1:G2", true, SheetNumber);
 
                RowNumber++;
 
@@ -3124,6 +3259,9 @@ namespace BudgetExcelSheets
                            sSheet.Set_Formula(RowNumber, 1, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:BZ,38,FALSE),0)", SheetNumber, "£ #,##0.00");
                            sSheet.Set_Formula(RowNumber, 2, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:BZ,41,FALSE),0)", SheetNumber, "£ #,##0.00");
                            sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+                           sSheet.Set_Formula(RowNumber, 4, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + Year + " MONTH SALES PER CUSTOMER'!A:BZ,39,FALSE),0)", SheetNumber, "#,##0.00");
+                           sSheet.Set_Formula(RowNumber, 5, "=IFERROR(VLOOKUP(A" + (RowNumber + 1) + ",'" + LastYear + " MONTH SALES PER CUSTOMER'!A:BZ,42,FALSE),0)", SheetNumber, "#,##0.00");
+                           sSheet.Set_Formula(RowNumber, 6 , "=IFERROR((E" + (RowNumber + 1) + "- F" + (RowNumber + 1) + ")/F" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
 
                            double YTDValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), Year + " MONTH SALES PER CUSTOMER"), 37, Year + " MONTH SALES PER CUSTOMER").ToString().Replace("£", ""));
                            double LastYTDValue = Classes.Global.ConvertToDouble(sSheet.Get_Cell_Text_From_Formula(sSheet.Get_Row_Index_From_Name(Classes.Global.ConvertToString(row["Name"]), LastYear + " MONTH SALES PER CUSTOMER"), 40, LastYear + " MONTH SALES PER CUSTOMER").ToString().Replace("£", ""));
@@ -3139,16 +3277,19 @@ namespace BudgetExcelSheets
                sSheet.Set_Formula(RowNumber, 1, "=SUBTOTAL(9, B3:B" + RowNumber + ")", SheetNumber, "£ #,##0.00");
                sSheet.Set_Formula(RowNumber, 2, "=SUBTOTAL(9, C3:C" + RowNumber + ")", SheetNumber, "£ #,##0.00");
                sSheet.Set_Formula(RowNumber, 3, "=IFERROR((B" + (RowNumber + 1) + "- C" + (RowNumber + 1) + ")/C" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
+               sSheet.Set_Formula(RowNumber, 4, "=SUBTOTAL(9, E3:E" + RowNumber + ")", SheetNumber, "#,##0.00");
+               sSheet.Set_Formula(RowNumber, 5, "=SUBTOTAL(9, F3:F" + RowNumber + ")", SheetNumber, "#,##0.00");
+               sSheet.Set_Formula(RowNumber, 6, "=IFERROR((E" + (RowNumber + 1) + "- F" + (RowNumber + 1) + ")/F" + (RowNumber + 1) + ",0)", SheetNumber, "#,##0 %");
 
                sSheet.Set_Bold_Range("A" + (RowNumber + 1) + ":D" + (RowNumber + 1), true, SheetNumber);
 
                RowNumber++;
 
-               sSheet.Set_AllBorders("A1:D" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
+               sSheet.Set_AllBorders("A1:G" + (RowNumber), Color.Black, BorderLineStyle.Thin, SheetNumber);
                sSheet.Set_OutsideBorders("A1", Color.Black, SheetNumber, BorderLineStyle.Medium);
-               sSheet.Set_OutsideBorders("B1:D2", Color.Black, SheetNumber, BorderLineStyle.Medium);
-               sSheet.Set_Font_Size("A1:D" + (RowNumber + 1), 12, SheetNumber);
-               sSheet.Auto_fit(0, 2, SheetNumber);
+               sSheet.Set_OutsideBorders("B1:G2", Color.Black, SheetNumber, BorderLineStyle.Medium);
+               sSheet.Set_Font_Size("A1:G" + (RowNumber + 1), 12, SheetNumber);
+               sSheet.Auto_fit(0, 6, SheetNumber);
 
                /**************************************************************************************************************************
                * TONNAGE THIS YEAR V LAST YEAR
@@ -3611,6 +3752,23 @@ namespace BudgetExcelSheets
                {
                   Deltaco.Name = "NEW WAVE DOORS DIRECT LTD";
                   Deltaco.Deleted = false;
+               }
+
+               PriorYearSalesModel Digico = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "DIGICO (UK) LTD").FirstOrDefault();
+               PriorYearSalesModel A6Audio = PriorYearSaleList.Where(w => w.InvoiceMonth == i && w.Name == "A6 AUDIO LIMITED").FirstOrDefault();
+
+               if (Digico != null && A6Audio != null)
+               {
+                  Digico.LineCostPrice += A6Audio.LineCostPrice;
+                  Digico.LineSalePrice += A6Audio.LineSalePrice;
+                  Digico.LineUnitWeight += A6Audio.LineUnitWeight;
+
+                  PriorYearSaleList.Remove(A6Audio);
+               }
+               else if (Digico == null && A6Audio != null)
+               {
+                  A6Audio.Name = "DIGICO (UK) LTD";
+                  A6Audio.Deleted = false;
                }
             }
 
